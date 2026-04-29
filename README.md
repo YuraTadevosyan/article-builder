@@ -29,8 +29,8 @@ The aesthetic is "warm paper, monospaced rectangles": Source Serif 4 for body co
 Requires Node 20+ and npm.
 
 ```bash
-npm install --legacy-peer-deps   # Radix peer ranges; --legacy-peer-deps is required
-npm run dev                      # http://localhost:5173
+npm install
+npm run dev    # http://localhost:5173
 ```
 
 The first thing you see is an empty dashboard. Click **New article** (`⌘N`) to start one.
@@ -266,7 +266,6 @@ The initial workspace is **empty**, so most specs create an article via the UI i
 
 - **No path aliases.** TS 6 deprecates `baseUrl`, so imports are relative.
 - **No `tailwind.config.js`.** Tailwind v4 is config-free; extend via CSS in `src/index.css`.
-- **`--legacy-peer-deps` is required for `npm install`** because of Radix peer ranges.
 - **Inline styles + CSS variables** is the dominant styling pattern. Keep new UI in this style rather than mixing in arbitrary Tailwind utility chains.
 - **Test IDs** use the `data-testid` attribute. Preserve existing IDs (`metadata-btn`, `meta-title-input`, `view-edit|split|preview`, `nav-history`, `theme-light|dark`, `version-item-*`, etc.) when refactoring.
 

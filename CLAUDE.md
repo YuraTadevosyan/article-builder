@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Design tokens live in `src/index.css`** as CSS custom properties on `:root` and `html.dark` (`--paper`, `--ink`, `--ink-2..4`, `--accent`, `--rule-soft`, `--mono`, `--serif`, etc.). Components reference these directly via inline `style={{ ... }}` and the `.btn`, `.label`, `.doc` utility classes defined in the same file. Most styling is inline-style + CSS-vars rather than Tailwind utility classes — match that pattern.
 - **No Shadcn CLI was used.** The Shadcn CLI couldn't scaffold into the non-empty repo, so Radix primitives (`@radix-ui/react-dialog`, `-dropdown-menu`, `-toast`, `-slot`) are installed as deps but the UI shell in `src/components/ui/` (Modal, Menu, Tag, Status, Kbd, ToastHost, CoverPh) is custom and built on the design's CSS variables. When adding new UI, follow that local pattern rather than reaching for Shadcn-style imports.
 - **TS 6 path aliases are not configured.** `baseUrl`/`paths` were removed from `tsconfig.app.json` because TS 6 deprecates `baseUrl`. Use relative imports.
-- **Cypress install needs `--legacy-peer-deps`** because of Radix peer ranges.
+- **Plain `npm install` works** — no `--legacy-peer-deps` flag needed. ESLint is pinned to ^9.18 (not 10) because `eslint-plugin-react@7.x` and `eslint-plugin-react-hooks@7.x` cap their `eslint` peer at `^9.7`. If you bump ESLint, check those plugins' peer ranges first.
 - **`cypress/` is in the ESLint `globalIgnores`** list — Cypress specs don't get linted by `npm run lint`.
 
 ## Architecture
