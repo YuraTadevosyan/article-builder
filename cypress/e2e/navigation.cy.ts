@@ -13,7 +13,7 @@ describe('Navigation', () => {
   })
 
   it('lands on the dashboard with the empty state', () => {
-    cy.location('pathname').should('match', /\/dashboard$/)
+    cy.location('hash').should('eq', '#/dashboard')
     cy.get('[data-testid="dashboard"]').should('be.visible')
     cy.contains('All articles').should('be.visible')
     cy.contains('No articles yet').should('be.visible')
@@ -21,21 +21,21 @@ describe('Navigation', () => {
 
   it('navigates to history (URL changes)', () => {
     cy.get('[data-testid="nav-history"]').click()
-    cy.location('pathname').should('match', /\/history$/)
+    cy.location('hash').should('eq', '#/history')
     cy.get('[data-testid="history-page"]').should('be.visible')
     cy.contains('Version history').should('be.visible')
   })
 
   it('navigates to settings (URL changes)', () => {
     cy.get('[data-testid="nav-settings"]').click()
-    cy.location('pathname').should('match', /\/settings$/)
+    cy.location('hash').should('eq', '#/settings')
     cy.get('[data-testid="settings-page"]').should('be.visible')
     cy.contains('Settings').should('be.visible')
   })
 
-  it('opens a newly created article in the editor at /editor/:id', () => {
+  it('opens a newly created article in the editor at #/editor/:id', () => {
     cy.get('[data-testid="new-article-btn"]').first().click()
-    cy.location('pathname').should('match', /\/editor\/art-/)
+    cy.location('hash').should('match', /^#\/editor\/art-/)
     cy.get('[data-testid="edit-pane"]').should('be.visible')
     cy.get('[data-testid="article-title-input"]').should('have.value', 'Untitled draft')
   })
@@ -44,12 +44,12 @@ describe('Navigation', () => {
     cy.get('[data-testid="new-article-btn"]').first().click()
     cy.get('[data-testid="nav-dashboard"]').click()
     cy.get('[data-testid^="article-item-"]').first().click()
-    cy.location('pathname').should('match', /\/editor\/art-/)
+    cy.location('hash').should('match', /^#\/editor\/art-/)
     cy.get('[data-testid="article-title-input"]').should('have.value', 'Untitled draft')
   })
 
-  it('unknown routes redirect to /dashboard', () => {
-    cy.visit('/this-route-does-not-exist', { failOnStatusCode: false })
-    cy.location('pathname').should('match', /\/dashboard$/)
+  it('unknown hash routes redirect to /dashboard', () => {
+    cy.visit('/#/this-route-does-not-exist')
+    cy.location('hash').should('eq', '#/dashboard')
   })
 })

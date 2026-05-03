@@ -45,6 +45,7 @@ The first thing you see is an empty dashboard. Click **New article** (`⌘N`) to
 | `npm run lint`     | ESLint flat-config across the whole repo                    |
 | `npm run cy:open`  | Open the Cypress GUI runner (dev server must be running)    |
 | `npm run cy:run`   | Run all E2E specs headlessly                                |
+| `npm run deploy`   | Build and publish `dist/` to the `gh-pages` branch          |
 
 Run a single E2E spec:
 
@@ -199,14 +200,14 @@ cypress/e2e/                     # navigation / dashboard / editor / modals spec
 
 | URL              | Component         | Notes                                                              |
 | ---------------- | ----------------- | ------------------------------------------------------------------ |
-| `/`              | redirect          | Redirects to `/dashboard`.                                         |
-| `/dashboard`     | `Dashboard`       | All articles. Empty state on first load.                           |
-| `/editor/:id`    | `EditorRoute`     | The block editor for one article. Unknown id → `/dashboard`.       |
-| `/history`       | `History`         | Version timeline + snapshot preview + restore.                     |
-| `/settings`      | `Settings`        | Tabs: Appearance / Editor / AI / Shortcuts.                        |
-| anything else    | redirect          | Catch-all → `/dashboard`.                                          |
+| `#/`             | redirect          | Redirects to `#/dashboard`.                                        |
+| `#/dashboard`    | `Dashboard`       | All articles. Empty state on first load.                           |
+| `#/editor/:id`   | `EditorRoute`     | The block editor for one article. Unknown id → `#/dashboard`.      |
+| `#/history`      | `History`         | Version timeline + snapshot preview + restore.                     |
+| `#/settings`     | `Settings`        | Tabs: Appearance / Editor / AI / Shortcuts.                        |
+| anything else    | redirect          | Catch-all → `#/dashboard`.                                         |
 
-Routing uses `react-router-dom`'s `BrowserRouter` with `basename={import.meta.env.BASE_URL}` so it works in dev (`/`), production, and on the `/article-builder/` subpath used for GitHub Pages. Nav is `<NavLink>` (sidebar) and `useNavigate()` (everywhere else — command palette, new-article handler, restore handler).
+Routing uses `react-router-dom`'s **`HashRouter`** so the app works on GitHub Pages (a static-only host with no SPA fallback). Every route lives in the URL fragment, which the static server ignores — refresh, share, and direct visit all resolve the same `index.html` and the router takes over on the client. Vite's `base: '/article-builder/'` still sets the asset prefix correctly; only the *route* portion is in the hash. Nav is `<NavLink>` (sidebar) and `useNavigate()` (everywhere else).
 
 ## Architecture
 
@@ -288,6 +289,17 @@ The initial workspace is **empty**, so most specs create an article via the UI i
 - **No `tailwind.config.js`.** Tailwind v4 is config-free; theme tokens live in `@theme inline` in `src/index.css`.
 - **Two valid styling paths.** Tailwind utility classes (preferred for new code) and inline `style={{ … }}` reading CSS variables (older surfaces). Both reach the same palette through `@theme inline`.
 - **Test IDs** use the `data-testid` attribute. Preserve existing IDs (`metadata-btn`, `meta-title-input`, `view-edit|split|preview`, `nav-history`, `theme-light|dark`, `version-item-*`, `scheme-*`, `reading-*`, etc.) when refactoring.
+
+## Deployment
+
+Static-host friendly. The default `npm run deploy` script publishes `dist/` to the `gh-pages` branch via the `gh-pages` package — the resulting site lives at `https://<user>.github.io/article-builder/`.
+
+Two pieces make GitHub Pages work without 404 hacks:
+
+1. **`base: '/article-builder/'`** in [vite.config.ts](vite.config.ts) so script and asset URLs resolve to the subpath.
+2. **`HashRouter`** in [src/main.tsx](src/main.tsx) so route URLs live entirely in the URL fragment (`/#/editor/foo`). gh-pages only needs to serve `index.html` once; the router takes over on the client. Refresh, deep links, and shared URLs all work without an SPA fallback.
+
+Hosting elsewhere (Vercel, Netlify, S3+CloudFront)? Same setup works. To switch to clean URLs (`/editor/foo` instead of `/#/editor/foo`), swap `HashRouter` → `BrowserRouter` in `src/main.tsx` and configure your host to serve `index.html` for unknown routes.
 
 ## Roadmap
 

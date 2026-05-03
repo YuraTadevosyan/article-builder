@@ -26,21 +26,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Routing
 
-Routes are owned by `react-router-dom`'s `BrowserRouter` (set up in `src/main.tsx`) with `basename={import.meta.env.BASE_URL}` so the same code works in dev (`/`), production, and on the `/article-builder/` subpath used for GitHub Pages.
+Routes are owned by `react-router-dom`'s **`HashRouter`** (set up in `src/main.tsx`). HashRouter is deliberate — the app is deployed to GitHub Pages under the `/article-builder/` subpath (Vite's `base`), and gh-pages has no SPA fallback. Hash-based routes (`/#/editor/foo`) live in the URL fragment so the static server only needs to serve `index.html` once.
 
 | URL              | Component         |
 | ---------------- | ----------------- |
-| `/`              | redirect → `/dashboard` |
-| `/dashboard`     | `Dashboard`       |
-| `/editor/:id`    | `EditorRoute` (App.tsx) — resolves `:id` and renders `Editor` + optional `AIPanel`. Unknown id redirects to `/dashboard`. |
-| `/history`       | `History`         |
-| `/settings`      | `Settings`        |
-| `*`              | redirect → `/dashboard` |
+| `#/`             | redirect → `#/dashboard` |
+| `#/dashboard`    | `Dashboard`       |
+| `#/editor/:id`   | `EditorRoute` (App.tsx) — resolves `:id` and renders `Editor` + optional `AIPanel`. Unknown id redirects to `#/dashboard`. |
+| `#/history`      | `History`         |
+| `#/settings`     | `Settings`        |
+| `*`              | redirect → `#/dashboard` |
 
 Navigation pattern:
-- Sidebar uses `<NavLink>` for nav items and article rows; `useMatch('/editor/:id')` to highlight the current article.
-- Everywhere else uses `useNavigate()` (CommandPalette, `App.newArticle`, `App.pickArticle`, `App.restoreVersion`).
-- `cypress.config.ts` `baseUrl` includes the `/article-builder` subpath so `cy.visit('/')` works.
+- Sidebar uses `<NavLink>` for nav items and article rows; `useMatch('/editor/:id')` to highlight the current article (the matcher operates on the parsed pathname inside the hash, so `/editor/...` is correct, not `#/editor/...`).
+- Everywhere else uses `useNavigate()` (CommandPalette, `App.newArticle`, `App.pickArticle`, `App.restoreVersion`) with plain `/path` strings — the router prepends the `#`.
+- Cypress tests assert on `cy.location('hash')` (e.g. `should('eq', '#/dashboard')`), not `cy.location('pathname')`.
+- If you ever swap to `BrowserRouter` for a different host, also configure that host to serve `index.html` for unknown paths and set `basename={import.meta.env.BASE_URL.replace(/\/$/, '')}` on the router.
 
 ## Architecture
 
