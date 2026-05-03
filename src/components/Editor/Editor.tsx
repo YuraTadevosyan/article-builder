@@ -5,7 +5,8 @@ import { Status } from '../ui/Status'
 import { Toolbar } from './Toolbar'
 import { EditPane } from './EditPane'
 import { PreviewPane } from './PreviewPane'
-import type { Article, AppSettings, Block, BlockType, EditorSelection, Version } from '../../types'
+import { cn } from '@/lib/utils'
+import type { Article, AppSettings, Block, BlockType, EditorSelection, Version } from '@/types'
 
 interface EditorProps {
   article: Article
@@ -107,6 +108,14 @@ export function Editor({ article, onUpdate, onOpenMeta, onOpenExport, onOpenAI, 
       next = { ...next, text: (b.items || []).join(' · ') }
       delete next.items
     }
+    // hr and img don't carry text/items — strip them so stale content
+    // doesn't render once the block changes shape.
+    if (type === 'hr') {
+      delete next.text; delete next.items; delete next.src; delete next.alt
+    }
+    if (type === 'img' && b.type !== 'img') {
+      delete next.text; delete next.items
+    }
     updateBlock(idx, next)
   }
 
@@ -148,72 +157,93 @@ export function Editor({ article, onUpdate, onOpenMeta, onOpenExport, onOpenAI, 
   const readMin = Math.max(1, Math.round(wordCount / 220))
 
   return (
-    <div data-editor-region style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
-      {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', padding: '8px 14px', borderBottom: '1px solid var(--rule-soft)', gap: 8, minHeight: 48, flexShrink: 0, rowGap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
-          <span className="label">DOC</span>
-          <span className="mono" style={{ fontSize: 11, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>/ {article.id}</span>
-          <span style={{ width: 1, height: 14, background: 'var(--rule-soft)' }} />
-          <button className="btn btn-ghost" onClick={onOpenMeta} style={{ height: 24, padding: '0 8px', fontSize: 11 }} data-testid="metadata-btn">
-            <Icon name="tag" size={11} />
+    <div data-editor-region className="flex h-full min-w-0 flex-1 flex-col">
+      {/* Top bar — wraps to two rows on narrow screens. Identifying info on the
+          left, status/view/actions on the right. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border px-3 py-2 md:px-4 md:py-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="label hidden md:inline">DOC</span>
+          <span className="mono hidden max-w-[100px] truncate text-[11px] text-muted-foreground md:inline">/ {article.id}</span>
+          <span className="hidden h-3.5 w-px bg-border md:block" />
+          <button
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-transparent bg-transparent px-2 text-xs text-foreground/85 transition-colors hover:bg-secondary hover:text-foreground"
+            onClick={onOpenMeta}
+            data-testid="metadata-btn"
+          >
+            <Icon name="tag" size={12} aria-hidden="true" />
             Metadata
           </button>
           <Status value={article.status} />
         </div>
 
-        <span style={{ flex: 1, minWidth: 8 }} />
-
-        {/* Save indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink-4)', flexShrink: 0 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: savingState === 'saving' ? 'var(--accent)' : 'var(--green)' }} />
+        {/* Save indicator — hidden on mobile to save space */}
+        <div className="mono hidden items-center gap-1.5 text-[10px] text-muted-foreground md:flex" aria-live="polite">
+          <span
+            className={cn(
+              'h-1.5 w-1.5 rounded-full',
+              savingState === 'saving' ? 'bg-accent' : 'bg-[var(--green)]'
+            )}
+            aria-hidden="true"
+          />
           {savingState === 'saving' ? 'saving…' : `saved · ${savedAt}`}
         </div>
-        <span style={{ width: 1, height: 14, background: 'var(--rule-soft)' }} />
 
-        {/* View toggle */}
-        <div style={{ display: 'flex', border: '1px solid var(--rule-soft)', flexShrink: 0 }}>
+        {/* View toggle — Split is hidden on small screens (it needs the room) */}
+        <div className="flex shrink-0 overflow-hidden rounded-md border border-border" role="group" aria-label="View mode">
           {([
-            { id: 'edit' as ViewMode, icon: 'edit', label: 'Edit' },
-            { id: 'split' as ViewMode, icon: 'split', label: 'Split', disabled: splitDisabled },
-            { id: 'preview' as ViewMode, icon: 'eye', label: 'Preview' },
-          ]).map(v => (
+            { id: 'edit' as ViewMode, icon: 'edit', label: 'Edit', mobile: true },
+            { id: 'split' as ViewMode, icon: 'split', label: 'Split', mobile: false, disabled: splitDisabled },
+            { id: 'preview' as ViewMode, icon: 'eye', label: 'Preview', mobile: true },
+          ]).map((v, i, arr) => (
             <button
               key={v.id}
               onClick={() => !v.disabled && setView(v.id)}
-              title={v.disabled ? 'Split view needs more room' : v.label}
               disabled={v.disabled}
               data-testid={`view-${v.id}`}
-              style={{
-                padding: '5px 8px', border: 0,
-                borderRight: v.id !== 'preview' ? '1px solid var(--rule-soft)' : 0,
-                background: effectiveView === v.id ? 'var(--ink)' : 'transparent',
-                color: v.disabled ? 'var(--ink-4)' : effectiveView === v.id ? 'var(--paper)' : 'var(--ink-2)',
-                cursor: v.disabled ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontFamily: 'var(--mono)', fontSize: 10, height: 24,
-                opacity: v.disabled ? 0.5 : 1,
-              }}
+              aria-label={`${v.label} view`}
+              aria-pressed={effectiveView === v.id}
+              title={v.disabled ? 'Split view needs more room' : v.label}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[11px] transition-colors',
+                i < arr.length - 1 && 'border-r border-r-border',
+                effectiveView === v.id ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85 hover:bg-secondary',
+                v.disabled && 'cursor-not-allowed opacity-40',
+                !v.mobile && 'hidden md:inline-flex'
+              )}
             >
-              <Icon name={v.icon} size={11} />
-              {v.label}
+              <Icon name={v.icon} size={12} aria-hidden="true" />
+              <span className="hidden md:inline">{v.label}</span>
             </button>
           ))}
         </div>
 
-        <button className="btn" onClick={onOpenAI} data-active={aiOpen} style={{ flexShrink: 0 }} data-testid="ai-toggle-btn">
-          <Icon name="ai" size={12} />
-          AI
-        </button>
-        <button className="btn" onClick={onOpenExport} style={{ flexShrink: 0 }} data-testid="export-btn">
-          <Icon name="download" size={12} />
-          Export
+        <button
+          onClick={onOpenAI}
+          data-active={aiOpen}
+          data-testid="ai-toggle-btn"
+          aria-label="Toggle AI assistant"
+          aria-pressed={aiOpen}
+          className={cn(
+            'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 font-mono text-[11px] transition-all',
+            aiOpen ? 'bg-primary text-primary-foreground shadow-[var(--shadow-sm)]' : 'bg-card text-foreground/85 hover:border-foreground hover:bg-secondary hover:text-foreground'
+          )}
+        >
+          <Icon name="ai" size={12} aria-hidden="true" />
+          <span className="hidden md:inline">AI</span>
         </button>
         <button
-          className="btn btn-primary"
-          style={{ flexShrink: 0 }}
-          data-testid="publish-btn"
+          onClick={onOpenExport}
+          data-testid="export-btn"
+          aria-label="Export article"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 font-mono text-[11px] text-foreground/85 transition-all hover:border-foreground hover:bg-secondary hover:text-foreground"
+        >
+          <Icon name="download" size={12} aria-hidden="true" />
+          <span className="hidden md:inline">Export</span>
+        </button>
+        <button
           onClick={onTogglePublish}
+          data-testid="publish-btn"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-primary bg-primary px-3 font-mono text-[11px] text-primary-foreground shadow-[var(--shadow-sm)] transition-all hover:bg-accent hover:text-accent-foreground"
         >
           {article.status === 'Published' ? 'Unpublish' : 'Publish'}
         </button>
@@ -222,7 +252,12 @@ export function Editor({ article, onUpdate, onOpenMeta, onOpenExport, onOpenAI, 
       <Toolbar exec={exec} setBlockType={setBlockType} selBlock={selBlock} insertBlock={insertBlock} blocks={article.blocks} />
 
       {/* Content area */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: effectiveView === 'split' ? '1fr 1fr' : '1fr', minHeight: 0, overflow: 'hidden' }}>
+      <div
+        className={cn(
+          'grid min-h-0 flex-1 overflow-hidden',
+          effectiveView === 'split' ? 'grid-cols-2' : 'grid-cols-1'
+        )}
+      >
         {(effectiveView === 'edit' || effectiveView === 'split') && (
           <EditPane
             article={article}
@@ -245,8 +280,8 @@ export function Editor({ article, onUpdate, onOpenMeta, onOpenExport, onOpenAI, 
         )}
       </div>
 
-      {/* Keyboard hint */}
-      <div style={{ position: 'absolute', bottom: 8, left: 240, display: 'flex', gap: 8, pointerEvents: 'none' }}>
+      {/* Keyboard hint — desktop only, doesn't crowd mobile UI */}
+      <div className="pointer-events-none absolute bottom-2 left-[270px] hidden gap-2 md:flex">
         <Kbd>⌘K</Kbd>
         <span className="mono" style={{ fontSize: 9, color: 'var(--ink-4)' }}>palette</span>
       </div>

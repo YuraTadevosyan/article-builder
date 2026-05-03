@@ -23,4 +23,14 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+  {
+    // Shadcn UI files conventionally re-export Radix primitives alongside
+    // React components (e.g. `export const Dialog = DialogPrimitive.Root`),
+    // which trips react-refresh/only-export-components. Disable that rule
+    // and CVA's variants helper warning under src/components/ui/ only.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

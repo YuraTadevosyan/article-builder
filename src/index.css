@@ -1,6 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap');
 @import "tailwindcss";
 
+/* Tailwind v4 dark variant — applies when an ancestor has the .dark class. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Shadcn UI theme tokens.
+ *
+ * `@theme inline` exposes our existing palette variables to Tailwind so that
+ * Shadcn-style utility classes — bg-background, text-foreground, border,
+ * bg-primary, etc. — resolve to the active color scheme. The mapping uses
+ * `var(--paper)` / `var(--ink)` (not literal colors) so all five schemes and
+ * both light/dark modes flow through automatically.
+ */
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--card);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--paper);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--paper);
+  --color-secondary: var(--paper-2);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper-2);
+  --color-muted-foreground: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-foreground: #fff;
+  --color-destructive: var(--red);
+  --color-destructive-foreground: var(--paper);
+  --color-border: var(--rule-soft);
+  --color-input: var(--rule-soft);
+  --color-ring: var(--accent);
+
+  --font-sans: "Inter Tight", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-serif: "Source Serif 4", Georgia, serif;
+
+  /* Warm, friendly radii. Pills (badge, switch) use rounded-full directly. */
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+
+  /* Soft, warm shadows. Color-tied so the dark scheme reads correctly. */
+  --shadow-sm: 0 1px 2px rgba(58, 36, 14, 0.06);
+  --shadow-md: 0 4px 14px -4px rgba(58, 36, 14, 0.10), 0 2px 6px -2px rgba(58, 36, 14, 0.06);
+  --shadow-lg: 0 14px 40px -8px rgba(58, 36, 14, 0.18), 0 6px 14px -4px rgba(58, 36, 14, 0.10);
+}
+
 /* Design system — typography is shared across all schemes; color tokens are per scheme. */
 :root {
   --sans: "Inter Tight", system-ui, sans-serif;
@@ -17,40 +66,42 @@
    the app has a sane palette before the data-theme attribute is set.
    ========================================================================== */
 
-/* warm (default) — paper + warm orange accent */
+/* warm (default) — friendly cream + honey-amber accent + warm-brown ink. */
 :root,
 html[data-theme="warm"] {
-  --paper: #f6f4ee;
-  --paper-2: #efece2;
-  --ink: #0d0d0c;
-  --ink-2: #2a2a27;
-  --ink-3: #5a5a55;
-  --ink-4: #8a8a82;
-  --rule: #1a1a18;
-  --rule-soft: #d8d4c6;
-  --rule-softer: #e6e2d4;
-  --accent: #d4733a;
-  --accent-soft: #f4d9c2;
-  --accent-ink: #7a3d18;
-  --green: #2f6b3a;
-  --red: #b04632;
-  --card: #fbfaf5;
+  --paper: #faf6ec;
+  --paper-2: #f1e9d6;
+  --ink: #2a1f15;
+  --ink-2: #423227;
+  --ink-3: #6b5746;
+  --ink-4: #968372;
+  --rule: #2a1f15;
+  --rule-soft: #e3d8c0;
+  --rule-softer: #ede4cf;
+  --accent: #d97a3b;
+  --accent-soft: #f8e3ce;
+  --accent-ink: #7d3d11;
+  --green: #2f7a40;
+  --red: #b94a32;
+  --card: #fffbf2;
 }
 html.dark,
 html.dark[data-theme="warm"] {
-  --paper: #131311;
-  --paper-2: #1a1a18;
-  --ink: #f3f0e6;
-  --ink-2: #d8d4c6;
-  --ink-3: #9a968a;
-  --ink-4: #6a6660;
-  --rule: #f3f0e6;
-  --rule-soft: #2c2c28;
-  --rule-softer: #222220;
-  --accent: #e8884a;
+  --paper: #1a1612;
+  --paper-2: #221c17;
+  --ink: #f5ecdb;
+  --ink-2: #ddd2bd;
+  --ink-3: #b5a994;
+  --ink-4: #8c8170;
+  --rule: #f5ecdb;
+  --rule-soft: #322a22;
+  --rule-softer: #261f1a;
+  --accent: #f0a060;
   --accent-soft: #3a2415;
-  --accent-ink: #f0a878;
-  --card: #181815;
+  --accent-ink: #f6c598;
+  --green: #5fcf76;
+  --red: #f59078;
+  --card: #1f1914;
 }
 
 /* slate — cool grey + cobalt blue */
@@ -59,32 +110,32 @@ html[data-theme="slate"] {
   --paper-2: #e6e9ee;
   --ink: #0e1116;
   --ink-2: #2a3038;
-  --ink-3: #586074;
-  --ink-4: #8a93a3;
+  --ink-3: #45506a;
+  --ink-4: #6c768a;
   --rule: #0e1116;
-  --rule-soft: #cdd2db;
-  --rule-softer: #dee2e8;
-  --accent: #2563eb;
+  --rule-soft: #c4cad4;
+  --rule-softer: #d8dde4;
+  --accent: #1e54d4;
   --accent-soft: #c8d8fa;
-  --accent-ink: #1e3a8a;
+  --accent-ink: #15306e;
   --green: #15803d;
   --red: #b91c1c;
   --card: #f8f9fc;
 }
 html.dark[data-theme="slate"] {
   --paper: #0f141b;
-  --paper-2: #161c25;
+  --paper-2: #181f29;
   --ink: #e6ecf2;
   --ink-2: #c5cdd6;
-  --ink-3: #8590a0;
-  --ink-4: #5b6675;
+  --ink-3: #a3aebc;
+  --ink-4: #788494;
   --rule: #e6ecf2;
-  --rule-soft: #232a35;
-  --rule-softer: #1b212a;
-  --accent: #3b82f6;
+  --rule-soft: #2a3140;
+  --rule-softer: #1d2530;
+  --accent: #5894ff;
   --accent-soft: #1e2942;
-  --accent-ink: #93c5fd;
-  --green: #4ade80;
+  --accent-ink: #afcafc;
+  --green: #5acc6f;
   --red: #f87171;
   --card: #131820;
 }
@@ -95,33 +146,33 @@ html[data-theme="sage"] {
   --paper-2: #e8e6da;
   --ink: #1a1d18;
   --ink-2: #313630;
-  --ink-3: #5b6258;
-  --ink-4: #8a9087;
+  --ink-3: #4a5048;
+  --ink-4: #6f7569;
   --rule: #1a1d18;
-  --rule-soft: #cfd0c2;
-  --rule-softer: #ddddd0;
-  --accent: #5e8b54;
+  --rule-soft: #c7c8b8;
+  --rule-softer: #d6d6c6;
+  --accent: #4f7745;
   --accent-soft: #d3e3cd;
-  --accent-ink: #2f5a2a;
-  --green: #2f6b3a;
-  --red: #b04632;
+  --accent-ink: #234a1f;
+  --green: #246b34;
+  --red: #a83e2a;
   --card: #f8f6ed;
 }
 html.dark[data-theme="sage"] {
   --paper: #131611;
-  --paper-2: #1a1d18;
+  --paper-2: #1c201a;
   --ink: #e9eadf;
   --ink-2: #c8cabb;
-  --ink-3: #8a8d80;
-  --ink-4: #5d6058;
+  --ink-3: #a3a797;
+  --ink-4: #75796d;
   --rule: #e9eadf;
-  --rule-soft: #262a23;
-  --rule-softer: #1d201b;
-  --accent: #84b079;
+  --rule-soft: #2c302a;
+  --rule-softer: #1f231d;
+  --accent: #92c187;
   --accent-soft: #2a3a26;
-  --accent-ink: #b8d6b0;
-  --green: #4ade80;
-  --red: #f87171;
+  --accent-ink: #c2dcb9;
+  --green: #5acc6f;
+  --red: #f48a72;
   --card: #161812;
 }
 
@@ -131,33 +182,33 @@ html[data-theme="rose"] {
   --paper-2: #ede2dc;
   --ink: #1c1715;
   --ink-2: #322a26;
-  --ink-3: #65564f;
-  --ink-4: #968278;
+  --ink-3: #4f433d;
+  --ink-4: #756358;
   --rule: #1c1715;
-  --rule-soft: #d8cbc4;
-  --rule-softer: #e6dcd5;
-  --accent: #c4576f;
+  --rule-soft: #cfc0b8;
+  --rule-softer: #ddd2cb;
+  --accent: #b14060;
   --accent-soft: #f1d3da;
-  --accent-ink: #7a2a40;
-  --green: #2f6b3a;
-  --red: #b04632;
+  --accent-ink: #65213a;
+  --green: #246b34;
+  --red: #a83e2a;
   --card: #fdf6f2;
 }
 html.dark[data-theme="rose"] {
   --paper: #1a1414;
-  --paper-2: #221c1b;
+  --paper-2: #241e1d;
   --ink: #f0e6e3;
   --ink-2: #d3c7c2;
-  --ink-3: #94847f;
-  --ink-4: #6a5b56;
+  --ink-3: #b09e98;
+  --ink-4: #877570;
   --rule: #f0e6e3;
-  --rule-soft: #2a2422;
-  --rule-softer: #221c1a;
-  --accent: #db7a8e;
+  --rule-soft: #322a28;
+  --rule-softer: #25201d;
+  --accent: #ec8c9d;
   --accent-soft: #3a2025;
-  --accent-ink: #efbcc6;
-  --green: #4ade80;
-  --red: #f87171;
+  --accent-ink: #f3c4ce;
+  --green: #5acc6f;
+  --red: #f48a72;
   --card: #1d1716;
 }
 
@@ -167,13 +218,13 @@ html[data-theme="mono"] {
   --paper-2: #f3f3f3;
   --ink: #000000;
   --ink-2: #2a2a2a;
-  --ink-3: #5a5a5a;
-  --ink-4: #8a8a8a;
+  --ink-3: #4a4a4a;
+  --ink-4: #6e6e6e;
   --rule: #000000;
-  --rule-soft: #d8d8d8;
-  --rule-softer: #ebebeb;
+  --rule-soft: #c8c8c8;
+  --rule-softer: #e2e2e2;
   --accent: #000000;
-  --accent-soft: #d8d8d8;
+  --accent-soft: #c8c8c8;
   --accent-ink: #000000;
   --green: #2a2a2a;
   --red: #2a2a2a;
@@ -181,14 +232,14 @@ html[data-theme="mono"] {
 }
 html.dark[data-theme="mono"] {
   --paper: #000000;
-  --paper-2: #0e0e0e;
+  --paper-2: #111111;
   --ink: #ffffff;
   --ink-2: #d8d8d8;
-  --ink-3: #989898;
-  --ink-4: #686868;
+  --ink-3: #b0b0b0;
+  --ink-4: #898989;
   --rule: #ffffff;
-  --rule-soft: #2a2a2a;
-  --rule-softer: #1a1a1a;
+  --rule-soft: #303030;
+  --rule-softer: #1c1c1c;
   --accent: #ffffff;
   --accent-soft: #2a2a2a;
   --accent-ink: #ffffff;
@@ -205,12 +256,31 @@ html, body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 
 body { min-height: 100vh; overflow: hidden; }
 
 button { font-family: inherit; }
+
+/* Visible keyboard focus ring on every interactive element. Mouse focus is
+   not styled (we rely on the :focus-visible heuristic). */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Don't double up the ring on inputs/textareas — they have their own
+   border-color treatment. */
+input:focus-visible,
+textarea:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
+}
 
 ::selection { background: var(--accent); color: #fff; }
 
@@ -281,6 +351,28 @@ textarea:focus { border-color: var(--ink); }
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes radixOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes radixOverlayOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes radixContentIn {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes radixContentOut {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+}
+@keyframes radixMenuIn   { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+@keyframes radixMenuOut  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-2px); } }
+
+/* Sheet (drawer) animations — slide in from each edge. */
+@keyframes sheetInLeft   { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes sheetOutLeft  { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes sheetInRight  { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes sheetOutRight { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes sheetInTop    { from { transform: translateY(-100%); } to { transform: none; } }
+@keyframes sheetOutTop   { from { transform: none; } to { transform: translateY(-100%); } }
+@keyframes sheetInBottom { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheetOutBottom{ from { transform: none; } to { transform: translateY(100%); } }
 @keyframes shimmer {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
@@ -294,9 +386,56 @@ textarea:focus { border-color: var(--ink); }
   to { transform: none; opacity: 1; }
 }
 
-.fade-up { animation: fadeUp 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.fade-in { animation: fadeIn 200ms ease both; }
-.toast { animation: slideRight 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fade-up { animation: fadeUp 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fade-in { animation: fadeIn 220ms ease both; }
+.toast { animation: slideRight 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/*
+ * Staggered list entrance — apply `.list-stagger` to a container and each
+ * direct child fades up in turn. Caps out at 12 children; later siblings
+ * still animate but at the final delay.
+ */
+.list-stagger > * {
+  animation: fadeUp 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.list-stagger > *:nth-child(1)  { animation-delay:  0ms; }
+.list-stagger > *:nth-child(2)  { animation-delay: 35ms; }
+.list-stagger > *:nth-child(3)  { animation-delay: 70ms; }
+.list-stagger > *:nth-child(4)  { animation-delay: 105ms; }
+.list-stagger > *:nth-child(5)  { animation-delay: 140ms; }
+.list-stagger > *:nth-child(6)  { animation-delay: 175ms; }
+.list-stagger > *:nth-child(7)  { animation-delay: 210ms; }
+.list-stagger > *:nth-child(8)  { animation-delay: 245ms; }
+.list-stagger > *:nth-child(9)  { animation-delay: 280ms; }
+.list-stagger > *:nth-child(10) { animation-delay: 315ms; }
+.list-stagger > *:nth-child(11) { animation-delay: 350ms; }
+.list-stagger > *:nth-child(n+12) { animation-delay: 385ms; }
+
+/* Lift on hover — primarily for cards. Pairs with `transition-all`. */
+.lift-hover {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 220ms ease;
+}
+.lift-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.lift-hover:active { transform: translateY(0); }
+
+/* Button press feedback — slight scale-down. Keeps click feedback friendly. */
+@media (hover: hover) {
+  button:not(:disabled):active { transform: scale(0.985); }
+}
+
+/* Honor reduced-motion preference for everything above. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
 .caret {
   display: inline-block;
   width: 1px;

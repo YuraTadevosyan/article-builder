@@ -1,10 +1,14 @@
-export type BlockType = 'h1' | 'h2' | 'h3' | 'p' | 'ul' | 'ol' | 'blockquote' | 'code' | 'img'
+export type BlockType = 'h1' | 'h2' | 'h3' | 'p' | 'ul' | 'ol' | 'blockquote' | 'code' | 'img' | 'hr'
 
 export interface Block {
   type: BlockType
   text?: string
   items?: string[]
   lang?: string
+  /** Image source — data: URL after upload, or http(s) URL when pasted. */
+  src?: string
+  /** Image alt text. Defaults to the empty string in the DOM but stored as undefined when unset. */
+  alt?: string
 }
 
 export type CoverKind = 'ph-warm' | 'ph-cool' | 'ph-paper' | 'ph-grid'

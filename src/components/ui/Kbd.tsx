@@ -6,17 +6,7 @@ interface KbdProps {
 
 export function Kbd({ children }: KbdProps) {
   return (
-    <span
-      style={{
-        fontFamily: 'var(--mono)',
-        fontSize: 10,
-        padding: '1px 5px',
-        border: '1px solid var(--rule-soft)',
-        color: 'var(--ink-3)',
-        background: 'var(--paper-2)',
-        lineHeight: 1.2,
-      }}
-    >
+    <span className="inline-flex items-center rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground shadow-[0_1px_0_0_var(--rule-soft)]">
       {children}
     </span>
   )

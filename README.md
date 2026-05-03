@@ -159,12 +159,12 @@ Editor-scoped shortcuts only fire when focus is inside the editor surface (anyth
 - **React 19** + **TypeScript 6**
 - **Vite 8** for dev server and bundling
 - **Tailwind CSS v4** via `@tailwindcss/vite` (config-free — no `tailwind.config.js`)
-- **Radix UI** primitives (Dialog, Dropdown Menu, Toast, Slot) — installed but used only as headless deps; the visible UI shell is custom
+- **Shadcn UI** (`new-york` style) on top of Radix primitives — Button, Input, Textarea, Dialog, DropdownMenu, Tabs, Switch, Slider, Select, Label, Card, Badge, Separator. Lives in `src/components/ui/` (lowercase, kebab-case filenames). The Shadcn CLI couldn't scaffold into the non-empty repo so components were copied in by hand and `components.json` is wired up for future CLI use.
+- **React Router 7** (`react-router-dom`) for client-side routing — see [Routes](#routes).
 - **Cypress 15** for end-to-end tests
-- **ESLint 10** with flat config
-- Hand-rolled SVG icon set (~40 icons) — no external icon library
+- **ESLint 9** with flat config
 
-There is no router, no state library, no CSS-in-JS runtime, and no backend. Styling is a mix of utility classes defined in `src/index.css` and inline `style={{ ... }}` props that read CSS custom properties.
+The codebase is in transition: newer surfaces (Sidebar, Settings, modals, command palette) use Tailwind utility classes + Shadcn components. Older surfaces (Editor internals, Dashboard cards, History timeline) still use inline-style + CSS-vars. Both styles share the same color tokens via `@theme inline` in `src/index.css`, so the five color schemes work everywhere.
 
 ---
 
@@ -195,9 +195,22 @@ src/
 cypress/e2e/                     # navigation / dashboard / editor / modals specs
 ```
 
+## Routes
+
+| URL              | Component         | Notes                                                              |
+| ---------------- | ----------------- | ------------------------------------------------------------------ |
+| `/`              | redirect          | Redirects to `/dashboard`.                                         |
+| `/dashboard`     | `Dashboard`       | All articles. Empty state on first load.                           |
+| `/editor/:id`    | `EditorRoute`     | The block editor for one article. Unknown id → `/dashboard`.       |
+| `/history`       | `History`         | Version timeline + snapshot preview + restore.                     |
+| `/settings`      | `Settings`        | Tabs: Appearance / Editor / AI / Shortcuts.                        |
+| anything else    | redirect          | Catch-all → `/dashboard`.                                          |
+
+Routing uses `react-router-dom`'s `BrowserRouter` with `basename={import.meta.env.BASE_URL}` so it works in dev (`/`), production, and on the `/article-builder/` subpath used for GitHub Pages. Nav is `<NavLink>` (sidebar) and `useNavigate()` (everywhere else — command palette, new-article handler, restore handler).
+
 ## Architecture
 
-Single-page app with no router. `src/App.tsx` is the orchestrator: it owns all top-level state and selects which screen to render based on a `route` string (`dashboard | editor | history | settings`).
+Single-page app. `src/App.tsx` owns top-level state and renders the sidebar + a `<Routes>` block.
 
 **State owned by `App.tsx`:**
 
@@ -229,7 +242,14 @@ Single-page app with no router. `src/App.tsx` is the orchestrator: it owns all t
 
 ## Design system
 
-Tokens are CSS custom properties on `:root` and `html.dark` in `src/index.css`. The light palette:
+Tokens come in two layers:
+
+1. **Palette variables** — `--paper`, `--ink`, `--ink-2..4`, `--accent`, etc. — are defined under `:root, html[data-theme="<scheme>"]` (light) and `html.dark[data-theme="<scheme>"]` (dark) in `src/index.css`. Five schemes ship: `warm` (default), `slate`, `sage`, `rose`, `mono`. Switch via `Settings → Appearance`.
+2. **Shadcn tokens** — `bg-background`, `text-foreground`, `border`, `bg-primary`, `bg-accent`, `bg-destructive`, `bg-muted`, `bg-popover`, etc. — are exposed to Tailwind via `@theme inline { … }` in `src/index.css`, mapping each Shadcn token to one of the palette variables. The Shadcn classes therefore reflect the active scheme automatically.
+
+Inline styles that read `var(--paper)` etc. and Tailwind classes that use `bg-background` etc. are interchangeable — they reach the same value. Use whichever matches the surrounding code.
+
+The light palette for `warm`:
 
 ```css
 --paper:       #f6f4ee   /* main background           */
@@ -264,17 +284,15 @@ The initial workspace is **empty**, so most specs create an article via the UI i
 
 ## Conventions
 
-- **No path aliases.** TS 6 deprecates `baseUrl`, so imports are relative.
-- **No `tailwind.config.js`.** Tailwind v4 is config-free; extend via CSS in `src/index.css`.
-- **Inline styles + CSS variables** is the dominant styling pattern. Keep new UI in this style rather than mixing in arbitrary Tailwind utility chains.
-- **Test IDs** use the `data-testid` attribute. Preserve existing IDs (`metadata-btn`, `meta-title-input`, `view-edit|split|preview`, `nav-history`, `theme-light|dark`, `version-item-*`, etc.) when refactoring.
+- **`@/*` path alias** points at `src/*`. Configured in both `tsconfig.app.json` (`paths`) and `vite.config.ts` (`resolve.alias`). Use `@/components/ui/button` etc. — relative paths still work for sibling files.
+- **No `tailwind.config.js`.** Tailwind v4 is config-free; theme tokens live in `@theme inline` in `src/index.css`.
+- **Two valid styling paths.** Tailwind utility classes (preferred for new code) and inline `style={{ … }}` reading CSS variables (older surfaces). Both reach the same palette through `@theme inline`.
+- **Test IDs** use the `data-testid` attribute. Preserve existing IDs (`metadata-btn`, `meta-title-input`, `view-edit|split|preview`, `nav-history`, `theme-light|dark`, `version-item-*`, `scheme-*`, `reading-*`, etc.) when refactoring.
 
 ## Roadmap
 
-Things that are intentionally **not** in scope for the demo, but are obvious extensions:
-
-- **Persistence.** State is in memory. The simplest first step is `localStorage` (mirror `articles` / `versions` / `settings`). The next is a real backend.
-- **Real LLM in the AI panel.** `AIPanel.submit` currently returns a hardcoded `sampleResponses[intent][tone]`. Swap the `setTimeout` for a `fetch` to your provider of choice.
+- **Database for articles & versions.** Coming next. State currently lives in `useState` in `App.tsx` and resets on refresh. The migration plan is to hide `articles` and `versions` behind a small repository interface (e.g. `ArticleRepo.list()`, `.get(id)`, `.upsert(article)`, `.delete(id)`, plus the `Version` equivalents), then back it with one of: `localStorage` (for offline-first, no backend), Supabase / Postgres (multi-device, multi-user), or PGlite (embedded Postgres in the browser). All UI surfaces already go through callbacks (`updateArticleById`, `deleteArticle`, etc.) in `App.tsx`, so there is exactly one seam to swap.
+- **Real LLM in the AI panel.** Already wired — set Provider to `openai` or `anthropic` in Settings → AI and supply a key. The `mock` provider is the default for offline / demo use.
 - **Real Markdown / HTML / PDF download.** The Export modal renders correct previews but the **Download** button only fires a toast. PDF needs a server (or a client-side renderer like `jspdf`).
 - **Diff view in History.** Today the history page shows the snapshot preview but no inline diff. A real implementation needs a block-level diff (`fast-myers-diff` or similar).
-- **Auth & multi-user.** Out of scope for a local demo.
+- **Auth & multi-user.** Will arrive with the database layer.

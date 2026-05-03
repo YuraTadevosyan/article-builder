@@ -148,14 +148,23 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
     : 'Insert'
 
   return (
-    <aside
-      data-testid="ai-panel"
-      style={{ width: 340, flexShrink: 0, background: 'var(--paper-2)', borderLeft: '1px solid var(--rule-soft)', display: 'flex', flexDirection: 'column', height: '100%' }}
-    >
+    <>
+      {/* Backdrop — covers the editor on mobile so taps outside dismiss the
+          panel. Hidden on md+ where the panel is an inline column. */}
+      <div
+        className="fixed inset-0 z-40 bg-black/35 md:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        data-testid="ai-panel"
+        aria-label="AI assistant"
+        className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[420px] shrink-0 flex-col border-l border-border bg-secondary shadow-xl md:relative md:inset-auto md:z-auto md:w-[340px] md:max-w-none md:shadow-none"
+      >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--rule-soft)', height: 48, gap: 8 }}>
-        <div style={{ width: 22, height: 22, background: 'var(--ink)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="ai" size={12} />
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-accent shadow-[var(--shadow-sm)]">
+          <Icon name="ai" size={13} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>AI Assistant</span>
@@ -163,15 +172,20 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
             {settings.aiProvider.toUpperCase()}{settings.aiModel ? ` · ${settings.aiModel}` : ''}
           </span>
         </div>
-        <button className="btn btn-ghost" onClick={onClose} style={{ height: 24, padding: '0 6px' }}>
-          <Icon name="close" size={12} />
+        <button
+          className="btn btn-ghost"
+          onClick={onClose}
+          aria-label="Close AI assistant"
+          style={{ height: 32, width: 32, padding: 0, justifyContent: 'center' }}
+        >
+          <Icon name="close" size={14} />
         </button>
       </div>
 
       {/* Scope */}
       <div style={{ padding: '12px 14px 8px', borderBottom: '1px solid var(--rule-soft)' }}>
         <div className="label" style={{ marginBottom: 8 }}>Scope</div>
-        <div style={{ display: 'flex', border: '1px solid var(--rule-soft)' }}>
+        <div style={{ display: 'flex', border: '1px solid var(--rule-soft)', borderRadius: 8, overflow: 'hidden' }}>
           {([
             { id: 'all' as const, label: 'Whole article' },
             { id: 'selection' as const, label: hasSelection ? `Selection (${selectionText.length}c)` : 'Selection' },
@@ -200,7 +214,8 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
           })}
         </div>
         {effectiveScope === 'selection' && hasSelection && (
-          <div style={{ marginTop: 8, padding: 8, background: 'var(--paper)', border: '1px solid var(--rule-soft)', borderLeft: '2px solid var(--accent)', fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.5, maxHeight: 64, overflow: 'auto' }}>
+          <div className="mt-2 max-h-16 overflow-auto rounded-md border border-border border-l-[3px] border-l-accent bg-card p-2.5 text-[12px] leading-relaxed text-foreground/85">
+
             “{selectionText.length > 200 ? selectionText.slice(0, 200) + '…' : selectionText}”
           </div>
         )}
@@ -266,7 +281,7 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
             <button
               key={s}
               onClick={() => setPrompt(s)}
-              style={{ fontFamily: 'var(--mono)', fontSize: 10, padding: '3px 6px', border: '1px solid var(--rule-soft)', background: 'transparent', color: 'var(--ink-3)', cursor: 'pointer' }}
+              className="cursor-pointer rounded-full border border-border bg-card px-2.5 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-foreground hover:bg-secondary hover:text-foreground"
             >
               ↳ {s}
             </button>
@@ -296,7 +311,7 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
                 {applyLabel}
               </button>
             </div>
-            <div style={{ padding: 12, background: 'var(--paper)', border: '1px solid var(--rule-soft)', borderLeft: '2px solid var(--accent)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink-2)', whiteSpace: 'pre-wrap' }}>
+            <div className="whitespace-pre-wrap rounded-md border border-border border-l-[3px] border-l-accent bg-card p-3 text-[13px] leading-relaxed text-foreground/90 shadow-[var(--shadow-sm)]">
               {response.text}
             </div>
           </div>
@@ -324,6 +339,7 @@ export function AIPanel({ open, onClose, onApply, onReplaceArticle, onReplaceSel
           </div>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

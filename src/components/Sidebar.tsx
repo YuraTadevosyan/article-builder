@@ -1,156 +1,166 @@
+import { NavLink, useMatch } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { Icon } from './Icon'
 import { Kbd } from './ui/Kbd'
-import { fmtDate } from '../lib/utils'
-import type { Article, Route } from '../types'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { fmtDate, cn } from '@/lib/utils'
+import type { Article } from '@/types'
 
 interface SidebarProps {
-  route: Route
-  onRoute: (r: Route) => void
   articles: Article[]
-  currentId: string | null
-  onPickArticle: (id: string) => void
   onNewArticle: () => void
+  /**
+   * Called when a nav link or article row is activated. Used by the mobile
+   * sheet to dismiss itself; on desktop the sidebar is always visible so
+   * this is a no-op.
+   */
+  onNavigate?: () => void
 }
 
 const navItems = [
-  { id: 'dashboard' as Route, label: 'Dashboard', icon: 'doc' },
-  { id: 'editor' as Route, label: 'Editor', icon: 'edit' },
-  { id: 'history' as Route, label: 'History', icon: 'history' },
-  { id: 'settings' as Route, label: 'Settings', icon: 'settings' },
-]
+  { to: '/dashboard', label: 'Dashboard', icon: 'doc',     testId: 'nav-dashboard' },
+  { to: '/editor',    label: 'Editor',    icon: 'edit',    testId: 'nav-editor', match: '/editor/*' },
+  { to: '/history',   label: 'History',   icon: 'history', testId: 'nav-history' },
+  { to: '/settings',  label: 'Settings',  icon: 'settings', testId: 'nav-settings' },
+] as const
 
-export function Sidebar({ route, onRoute, articles, currentId, onPickArticle, onNewArticle }: SidebarProps) {
+export function Sidebar({ articles, onNewArticle, onNavigate }: SidebarProps) {
   const drafts = articles.filter(a => a.status === 'Draft')
   const published = articles.filter(a => a.status === 'Published')
+  const editorMatch = useMatch('/editor/:id')
+  const currentId = editorMatch?.params.id ?? null
 
   return (
     <aside
       data-testid="sidebar"
-      style={{
-        width: 232,
-        flexShrink: 0,
-        background: 'var(--paper)',
-        borderRight: '1px solid var(--rule-soft)',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
+      aria-label="Workspace navigation"
+      className="flex h-full w-[260px] shrink-0 flex-col border-r border-border bg-background"
     >
       {/* Brand */}
-      <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid var(--rule-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 22, height: 22, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--paper)', flexShrink: 0, position: 'relative' }}>
-          <div style={{ width: 8, height: 8, background: 'var(--accent)' }} />
-          <div style={{ position: 'absolute', inset: 0, border: '1px solid var(--accent)', transform: 'translate(2px, 2px)', pointerEvents: 'none' }} />
+      <div className="flex items-center gap-2.5 border-b border-border px-4 py-4">
+        <div className="relative flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background shadow-[var(--shadow-sm)]" aria-hidden="true">
+          <div className="h-2.5 w-2.5 rounded-sm bg-accent" />
+          <div className="pointer-events-none absolute inset-0 translate-x-[2px] translate-y-[2px] rounded-md border border-accent/60" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-          <span style={{ fontWeight: 600, fontSize: 13, letterSpacing: '-0.01em' }}>Article Builder</span>
-          <span className="mono" style={{ fontSize: 9, color: 'var(--ink-4)', letterSpacing: '0.04em' }}>v0.4 · LOCAL</span>
+        <div className="flex flex-col leading-tight">
+          <span className="text-sm font-semibold tracking-tight">Article Builder</span>
+          <span className="font-mono text-[10px] tracking-wider text-muted-foreground">v0.6 · LOCAL</span>
         </div>
       </div>
 
       {/* New article */}
-      <div style={{ padding: 12, borderBottom: '1px solid var(--rule-soft)' }}>
-        <button
+      <div className="border-b border-border p-3">
+        <Button
           onClick={onNewArticle}
-          className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center', height: 32 }}
+          size="lg"
+          className="w-full justify-start gap-2 text-sm"
           data-testid="new-article-btn"
         >
-          <Icon name="plus" size={12} />
+          <Plus size={14} aria-hidden="true" />
           New article
-          <span style={{ flex: 1 }} />
+          <span className="flex-1" />
           <Kbd>⌘N</Kbd>
-        </button>
+        </Button>
       </div>
 
       {/* Navigation */}
-      <nav style={{ padding: '8px 8px 4px' }}>
-        <div className="label" style={{ padding: '6px 8px 4px' }}>Workspace</div>
-        {navItems.map(n => {
-          const active = route === n.id
-          return (
-            <button
-              key={n.id}
-              onClick={() => onRoute(n.id)}
-              data-testid={`nav-${n.id}`}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '6px 8px',
-                background: active ? 'var(--paper-2)' : 'transparent',
-                border: 0,
-                borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                cursor: 'pointer',
-                color: active ? 'var(--ink)' : 'var(--ink-2)',
-                fontSize: 13,
-                fontFamily: 'var(--sans)',
-                textAlign: 'left',
-                fontWeight: active ? 500 : 400,
-              }}
-            >
-              <Icon name={n.icon} size={14} />
-              <span style={{ flex: 1 }}>{n.label}</span>
-            </button>
-          )
-        })}
+      <nav aria-label="Workspace" className="px-2 pt-3">
+        <div className="label px-2 pb-1.5">Workspace</div>
+        {navItems.map(n => (
+          <SidebarNavLink key={n.to} {...n} onNavigate={onNavigate} />
+        ))}
       </nav>
 
+      <Separator className="mt-3" />
+
       {/* Article list */}
-      <div style={{ borderTop: '1px solid var(--rule-soft)', marginTop: 8, padding: '8px 8px 0', flex: 1, overflowY: 'auto', minHeight: 0 }}>
-        <div className="label" style={{ padding: '6px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
+        <div className="label flex items-center justify-between px-2 pb-2">
           <span>Drafts</span>
-          <span style={{ color: 'var(--ink-4)' }}>{drafts.length}</span>
+          <span className="text-muted-foreground">{drafts.length}</span>
         </div>
         {drafts.length === 0 && (
-          <div style={{ padding: '4px 10px 8px', fontSize: 11, color: 'var(--ink-4)' }}>No drafts yet.</div>
+          <div className="px-2.5 pb-3 text-xs text-muted-foreground">No drafts yet.</div>
         )}
         {drafts.map(a => (
-          <SidebarArticle key={a.id} article={a} active={currentId === a.id && route === 'editor'} onClick={() => onPickArticle(a.id)} />
+          <SidebarArticle key={a.id} article={a} active={currentId === a.id} onNavigate={onNavigate} />
         ))}
 
-        <div className="label" style={{ padding: '12px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="label mt-4 flex items-center justify-between px-2 pb-2">
           <span>Published</span>
-          <span style={{ color: 'var(--ink-4)' }}>{published.length}</span>
+          <span className="text-muted-foreground">{published.length}</span>
         </div>
         {published.length === 0 && (
-          <div style={{ padding: '4px 10px 8px', fontSize: 11, color: 'var(--ink-4)' }}>Nothing published.</div>
+          <div className="px-2.5 pb-3 text-xs text-muted-foreground">Nothing published.</div>
         )}
         {published.map(a => (
-          <SidebarArticle key={a.id} article={a} active={currentId === a.id && route === 'editor'} onClick={() => onPickArticle(a.id)} />
+          <SidebarArticle key={a.id} article={a} active={currentId === a.id} onNavigate={onNavigate} />
         ))}
-        <div style={{ height: 12 }} />
+        <div className="h-3" />
       </div>
     </aside>
   )
 }
 
-function SidebarArticle({ article, active, onClick }: { article: Article; active: boolean; onClick: () => void }) {
+interface SidebarNavLinkProps {
+  to: string
+  label: string
+  icon: string
+  testId: string
+  match?: string
+  onNavigate?: () => void
+}
+
+function SidebarNavLink({ to, label, icon, testId, match, onNavigate }: SidebarNavLinkProps) {
+  const editorMatch = useMatch(match ?? '___never___')
   return (
-    <button
-      onClick={onClick}
-      data-testid={`article-item-${article.id}`}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 8,
-        padding: '6px 8px',
-        background: active ? 'var(--paper-2)' : 'transparent',
-        border: 0,
-        borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
-        cursor: 'pointer',
-        textAlign: 'left',
-        color: 'var(--ink-2)',
+    <NavLink
+      to={to}
+      data-testid={testId}
+      onClick={() => onNavigate?.()}
+      className={({ isActive }) => {
+        const active = isActive || (match && editorMatch)
+        return cn(
+          'group relative mb-0.5 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-all min-h-[40px]',
+          active
+            ? 'bg-accent-soft text-accent-ink font-medium shadow-[var(--shadow-sm)]'
+            : 'text-foreground/85 hover:bg-secondary hover:text-foreground'
+        )
       }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--paper-2)' }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+      end={to === '/editor' ? false : true}
     >
-      <div style={{ fontSize: 12, lineHeight: 1.35, color: active ? 'var(--ink)' : 'var(--ink-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {({ isActive }) => {
+        const active = isActive || (match && editorMatch)
+        return (
+          <>
+            <Icon name={icon} size={16} />
+            <span className="flex-1">{label}</span>
+            {active && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />}
+          </>
+        )
+      }}
+    </NavLink>
+  )
+}
+
+function SidebarArticle({ article, active, onNavigate }: { article: Article; active: boolean; onNavigate?: () => void }) {
+  return (
+    <NavLink
+      to={`/editor/${article.id}`}
+      data-testid={`article-item-${article.id}`}
+      onClick={() => onNavigate?.()}
+      className={cn(
+        'mb-0.5 flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-all min-h-[40px]',
+        active
+          ? 'bg-accent-soft text-accent-ink shadow-[var(--shadow-sm)]'
+          : 'hover:bg-secondary'
+      )}
+    >
+      <div className={cn('flex-1 truncate text-[13px] leading-snug', active ? 'text-accent-ink font-medium' : 'text-foreground/85')}>
         {article.title}
       </div>
-      <span className="mono" style={{ fontSize: 9, color: 'var(--ink-4)', flexShrink: 0, paddingTop: 2 }}>{fmtDate(article.updatedAt)}</span>
-    </button>
+      <span className="mono shrink-0 pt-0.5 text-[10px] text-muted-foreground">{fmtDate(article.updatedAt)}</span>
+    </NavLink>
   )
 }

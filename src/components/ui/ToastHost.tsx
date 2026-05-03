@@ -1,5 +1,6 @@
 import { Icon } from '../Icon'
-import type { Toast } from '../../types'
+import { cn } from '@/lib/utils'
+import type { Toast } from '@/types'
 
 interface ToastHostProps {
   toasts: Toast[]
@@ -9,33 +10,27 @@ interface ToastHostProps {
 export function ToastHost({ toasts, onDismiss }: ToastHostProps) {
   return (
     <div
-      style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 80, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}
+      className="pointer-events-none fixed bottom-4 right-4 z-[80] flex flex-col gap-2"
       data-testid="toast-host"
+      aria-live="polite"
     >
       {toasts.map(t => (
         <div
           key={t.id}
-          className="toast"
-          style={{
-            pointerEvents: 'auto',
-            background: 'var(--ink)',
-            color: 'var(--paper)',
-            padding: '10px 14px',
-            fontSize: 12,
-            fontFamily: 'var(--mono)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            minWidth: 240,
-            borderLeft: `2px solid ${t.tone === 'success' ? 'var(--accent)' : t.tone === 'error' ? 'var(--red)' : 'var(--ink-3)'}`,
-          }}
           data-testid="toast"
+          className={cn(
+            'toast pointer-events-auto flex min-w-[240px] items-center gap-2.5 rounded-lg border-l-[3px] bg-foreground px-3.5 py-3 font-mono text-xs text-background shadow-[var(--shadow-md)]',
+            t.tone === 'success' && 'border-l-[var(--accent)]',
+            t.tone === 'error' && 'border-l-[var(--red)]',
+            t.tone === 'default' && 'border-l-[var(--ink-3)]'
+          )}
         >
-          <Icon name={t.tone === 'success' ? 'check' : 'circle-dot'} size={12} />
-          <span style={{ flex: 1 }}>{t.text}</span>
+          <Icon name={t.tone === 'success' ? 'check' : 'circle-dot'} size={13} aria-hidden="true" />
+          <span className="flex-1">{t.text}</span>
           <button
             onClick={() => onDismiss(t.id)}
-            style={{ background: 'none', border: 0, color: 'var(--ink-4)', cursor: 'pointer', padding: 0 }}
+            aria-label="Dismiss notification"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-background/60 transition-colors hover:bg-background/10 hover:text-background"
           >
             <Icon name="close" size={12} />
           </button>

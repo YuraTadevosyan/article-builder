@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils'
+
 interface StatusProps {
   value: string
 }
@@ -7,21 +9,17 @@ export function Status({ value }: StatusProps) {
   return (
     <span
       data-testid="status-pill"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        padding: '2px 7px',
-        fontFamily: 'var(--mono)',
-        fontSize: 10,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        border: '1px solid var(--rule-soft)',
-        color: isPub ? 'var(--green)' : 'var(--ink-3)',
-        background: 'transparent',
-      }}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider',
+        isPub ? 'border-[var(--green)]/30 text-[var(--green)]' : 'border-border text-muted-foreground'
+      )}
     >
-      <span style={{ width: 6, height: 6, background: isPub ? 'var(--green)' : 'var(--ink-4)', borderRadius: '50%', display: 'inline-block' }} />
+      <span
+        className={cn(
+          'inline-block h-1.5 w-1.5 rounded-full',
+          isPub ? 'bg-[var(--green)]' : 'bg-muted-foreground'
+        )}
+      />
       {value}
     </span>
   )

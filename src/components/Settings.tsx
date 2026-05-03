@@ -1,7 +1,20 @@
 import { useState } from 'react'
-import { Icon } from './Icon'
-import { Kbd } from './ui/Kbd'
-import type { AppSettings, ColorScheme, ReadingWidth, AIProvider } from '../types'
+import { Moon, Sun } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import type { AppSettings, ColorScheme, ReadingWidth, AIProvider } from '@/types'
 
 interface SettingsProps {
   theme: string
@@ -10,15 +23,6 @@ interface SettingsProps {
   onUpdateSettings: (patch: Partial<AppSettings>) => void
   push: (text: string, tone?: 'success' | 'error' | 'default') => void
 }
-
-type SectionId = 'appearance' | 'editor' | 'ai' | 'shortcuts'
-
-const sections: { id: SectionId; label: string }[] = [
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'editor', label: 'Editor' },
-  { id: 'ai', label: 'AI' },
-  { id: 'shortcuts', label: 'Shortcuts' },
-]
 
 const READING_WIDTHS: { id: ReadingWidth; label: string }[] = [
   { id: 'narrow', label: 'Narrow' },
@@ -48,7 +52,7 @@ const PROVIDER_DEFAULTS: Record<AIProvider, { url: string; model: string }> = {
 }
 
 export function Settings({ theme, setTheme, settings, onUpdateSettings, push }: SettingsProps) {
-  const [active, setActive] = useState<SectionId>('appearance')
+  const [active, setActive] = useState('appearance')
 
   const setProvider = (p: AIProvider) => {
     onUpdateSettings({
@@ -59,253 +63,198 @@ export function Settings({ theme, setTheme, settings, onUpdateSettings, push }: 
   }
 
   return (
-    <div data-testid="settings-page" style={{ flex: 1, height: '100%', overflow: 'auto' }}>
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '32px 40px 80px' }}>
-        <div style={{ marginBottom: 24 }}>
-          <div className="label" style={{ marginBottom: 6 }}>Workspace</div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', margin: 0, lineHeight: 1.1 }}>
-            Settings
-          </h1>
+    <div data-testid="settings-page" className="h-full flex-1 overflow-auto">
+      <div className="mx-auto max-w-[980px] px-4 pb-16 pt-6 md:px-10 md:pb-20 md:pt-8">
+        <div className="mb-6">
+          <div className="label mb-1.5">Workspace</div>
+          <h1 className="m-0 font-serif text-2xl font-bold leading-tight tracking-tight md:text-3xl">Settings</h1>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 32 }}>
-          <nav style={{ borderRight: '1px solid var(--rule-soft)', paddingRight: 20 }}>
-            {sections.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setActive(s.id)}
-                data-testid={`settings-nav-${s.id}`}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '8px 10px', border: 0,
-                  borderLeft: `2px solid ${active === s.id ? 'var(--accent)' : 'transparent'}`,
-                  background: active === s.id ? 'var(--paper-2)' : 'transparent',
-                  color: active === s.id ? 'var(--ink)' : 'var(--ink-2)',
-                  fontSize: 13, fontFamily: 'var(--sans)',
-                  fontWeight: active === s.id ? 500 : 400,
-                  cursor: 'pointer', marginBottom: 2,
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
-          </nav>
+        <Tabs value={active} onValueChange={setActive} className="w-full">
+          <TabsList>
+            <TabsTrigger value="appearance" data-testid="settings-nav-appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="editor"     data-testid="settings-nav-editor">Editor</TabsTrigger>
+            <TabsTrigger value="ai"         data-testid="settings-nav-ai">AI</TabsTrigger>
+            <TabsTrigger value="shortcuts"  data-testid="settings-nav-shortcuts">Shortcuts</TabsTrigger>
+          </TabsList>
 
-          <div>
-            {active === 'appearance' && (
-              <SettingsSection title="Appearance" subtitle="Mode, color scheme, and reading width.">
-                <SettingRow
-                  label="Mode"
-                  hint="Light is best for daytime drafting; dark for late-night editing."
-                  control={
-                    <div style={{ display: 'flex', border: '1px solid var(--rule-soft)' }}>
-                      {[{ id: 'light', icon: 'sun', label: 'Light' }, { id: 'dark', icon: 'moon', label: 'Dark' }].map((t, i) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setTheme(t.id)}
-                          data-testid={`theme-${t.id}`}
-                          style={{
-                            padding: '6px 12px', border: 0,
-                            borderRight: i === 0 ? '1px solid var(--rule-soft)' : 0,
-                            background: theme === t.id ? 'var(--ink)' : 'transparent',
-                            color: theme === t.id ? 'var(--paper)' : 'var(--ink-2)',
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                            fontFamily: 'var(--mono)', fontSize: 11,
-                          }}
-                        >
-                          <Icon name={t.icon} size={12} />
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  }
-                />
-                <SettingRow
-                  label="Color scheme"
-                  hint="Each scheme has a matched light and dark palette."
-                  control={
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {SCHEMES.map(s => {
-                        const active = settings.colorScheme === s.id
-                        const swatch = theme === 'dark' ? s.dark : s.light
-                        return (
-                          <button
-                            key={s.id}
-                            onClick={() => onUpdateSettings({ colorScheme: s.id })}
-                            data-testid={`scheme-${s.id}`}
-                            title={s.label}
-                            style={{
-                              display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4,
-                              padding: 4,
-                              border: `2px solid ${active ? 'var(--accent)' : 'var(--rule-soft)'}`,
-                              background: 'transparent', cursor: 'pointer',
-                            }}
-                          >
-                            <div style={{ display: 'flex', width: 64, height: 28 }}>
-                              <span style={{ flex: 2, background: swatch.paper, borderRight: `1px solid ${swatch.ink}` }} />
-                              <span style={{ flex: 1, background: swatch.ink }} />
-                              <span style={{ flex: 1, background: swatch.accent }} />
-                            </div>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink-2)', textAlign: 'center' }}>{s.label}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  }
-                />
-                <SettingRow
-                  label="Reading column"
-                  hint="The width of the editor and preview panes."
-                  control={
-                    <div style={{ display: 'flex', border: '1px solid var(--rule-soft)' }}>
-                      {READING_WIDTHS.map((w, i) => (
-                        <button
-                          key={w.id}
-                          data-testid={`reading-${w.id}`}
-                          onClick={() => onUpdateSettings({ readingWidth: w.id })}
-                          style={{
-                            padding: '6px 12px', border: 0,
-                            borderRight: i < READING_WIDTHS.length - 1 ? '1px solid var(--rule-soft)' : 0,
-                            background: settings.readingWidth === w.id ? 'var(--ink)' : 'transparent',
-                            color: settings.readingWidth === w.id ? 'var(--paper)' : 'var(--ink-2)',
-                            cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11,
-                          }}>{w.label}</button>
-                      ))}
-                    </div>
-                  }
-                />
-              </SettingsSection>
-            )}
+          {/* Appearance */}
+          <TabsContent value="appearance">
+            <SettingsSection title="Appearance" subtitle="Mode, color scheme, and reading width.">
+              <SettingRow label="Mode" hint="Light is best for daytime drafting; dark for late-night editing.">
+                <div className="flex border border-border">
+                  {[
+                    { id: 'light', label: 'Light', Icon: Sun },
+                    { id: 'dark',  label: 'Dark',  Icon: Moon },
+                  ].map((t, i) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t.id)}
+                      data-testid={`theme-${t.id}`}
+                      className={cn(
+                        'flex cursor-pointer items-center gap-1.5 border-0 px-3 py-1.5 font-mono text-[11px] transition-colors',
+                        i === 0 && 'border-r border-r-border',
+                        theme === t.id ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85'
+                      )}
+                    >
+                      <t.Icon size={12} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </SettingRow>
 
-            {active === 'editor' && (
-              <SettingsSection title="Editor" subtitle="Auto-save cadence and writing aids.">
-                <SettingRow
-                  label="Auto-save"
-                  hint="Save the document after this long without input."
-                  control={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <input
-                        type="range"
-                        min={500}
-                        max={5000}
-                        step={250}
-                        value={settings.autoSaveDelayMs}
-                        onChange={(e) => onUpdateSettings({ autoSaveDelayMs: parseInt(e.target.value, 10) })}
-                        data-testid="autosave-range"
-                        style={{ width: 160 }}
-                      />
-                      <span className="mono" style={{ fontSize: 11, color: 'var(--ink-2)', width: 40 }}>
-                        {(settings.autoSaveDelayMs / 1000).toFixed(2).replace(/\.?0+$/, '')}s
-                      </span>
-                    </div>
-                  }
-                />
-                <SettingRow
-                  label="Spell check"
-                  hint="Use the browser's native spell checker in editable blocks."
-                  control={
-                    <Toggle
-                      on={settings.spellCheck}
-                      onToggle={() => onUpdateSettings({ spellCheck: !settings.spellCheck })}
-                    />
-                  }
-                />
-              </SettingsSection>
-            )}
+              <SettingRow label="Color scheme" hint="Each scheme has a matched light and dark palette.">
+                <div className="flex flex-wrap gap-2">
+                  {SCHEMES.map(s => {
+                    const isActive = settings.colorScheme === s.id
+                    const swatch = theme === 'dark' ? s.dark : s.light
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => onUpdateSettings({ colorScheme: s.id })}
+                        data-testid={`scheme-${s.id}`}
+                        title={s.label}
+                        className={cn(
+                          'flex cursor-pointer flex-col items-stretch gap-1 bg-transparent p-1 transition-colors',
+                          isActive ? 'border-2 border-accent' : 'border-2 border-border'
+                        )}
+                      >
+                        <div className="flex h-7 w-16">
+                          <span className="flex-[2] border-r" style={{ background: swatch.paper, borderRightColor: swatch.ink }} />
+                          <span className="flex-1" style={{ background: swatch.ink }} />
+                          <span className="flex-1" style={{ background: swatch.accent }} />
+                        </div>
+                        <span className="mono text-center text-[10px] text-foreground/85">{s.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </SettingRow>
 
-            {active === 'ai' && (
-              <SettingsSection title="AI Assistant" subtitle="Pick a provider. Keys are kept in memory and never leave the browser.">
-                <SettingRow
-                  label="Provider"
-                  hint="Mock returns canned responses. OpenAI and Anthropic call their APIs from the browser."
-                  control={
-                    <div style={{ display: 'flex', border: '1px solid var(--rule-soft)' }}>
-                      {(['mock', 'openai', 'anthropic'] as const).map((p, i) => (
-                        <button
-                          key={p}
-                          onClick={() => setProvider(p)}
-                          data-testid={`provider-${p}`}
-                          style={{
-                            padding: '6px 12px', border: 0,
-                            borderRight: i < 2 ? '1px solid var(--rule-soft)' : 0,
-                            background: settings.aiProvider === p ? 'var(--ink)' : 'transparent',
-                            color: settings.aiProvider === p ? 'var(--paper)' : 'var(--ink-2)',
-                            cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'capitalize',
-                          }}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  }
-                />
-                {settings.aiProvider !== 'mock' && (
-                  <>
-                    <SettingRow
-                      label="API URL"
-                      hint="POST endpoint. Defaults match the official provider URLs; override for proxies."
-                      control={
-                        <input
-                          type="text"
-                          value={settings.aiApiUrl}
-                          onChange={(e) => onUpdateSettings({ aiApiUrl: e.target.value })}
-                          data-testid="ai-url-input"
-                          style={{ width: 320 }}
-                        />
-                      }
-                    />
-                    <SettingRow
-                      label="API key"
-                      hint="Stored in memory only — re-enter after a reload."
-                      control={
-                        <input
-                          type="password"
-                          value={settings.aiApiKey}
-                          onChange={(e) => onUpdateSettings({ aiApiKey: e.target.value })}
-                          placeholder={settings.aiProvider === 'openai' ? 'sk-…' : 'sk-ant-…'}
-                          data-testid="ai-key-input"
-                          style={{ width: 320 }}
-                        />
-                      }
-                    />
-                    <SettingRow
-                      label="Model"
-                      control={
-                        <input
-                          type="text"
-                          value={settings.aiModel}
-                          onChange={(e) => onUpdateSettings({ aiModel: e.target.value })}
-                          data-testid="ai-model-input"
-                          style={{ width: 320 }}
-                        />
-                      }
-                    />
-                    <SettingRow
-                      label=""
-                      control={
-                        <button
-                          className="btn"
-                          onClick={() => {
-                            if (!settings.aiApiKey) push('Add an API key first', 'error')
-                            else push('AI configured. Open the AI panel to use it.', 'success')
-                          }}
-                        >
-                          Save & verify (manual)
-                        </button>
-                      }
-                    />
-                  </>
-                )}
-              </SettingsSection>
-            )}
+              <SettingRow label="Reading column" hint="The width of the editor and preview panes.">
+                <div className="flex border border-border">
+                  {READING_WIDTHS.map((w, i) => (
+                    <button
+                      key={w.id}
+                      data-testid={`reading-${w.id}`}
+                      onClick={() => onUpdateSettings({ readingWidth: w.id })}
+                      className={cn(
+                        'cursor-pointer border-0 px-3 py-1.5 font-mono text-[11px] transition-colors',
+                        i < READING_WIDTHS.length - 1 && 'border-r border-r-border',
+                        settings.readingWidth === w.id ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85'
+                      )}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
+              </SettingRow>
+            </SettingsSection>
+          </TabsContent>
 
-            {active === 'shortcuts' && (
-              <SettingsSection title="Keyboard shortcuts" subtitle="A subset — full list in the command palette (⌘K).">
-                <ShortcutTable />
-              </SettingsSection>
-            )}
-          </div>
-        </div>
+          {/* Editor */}
+          <TabsContent value="editor">
+            <SettingsSection title="Editor" subtitle="Auto-save cadence and writing aids.">
+              <SettingRow label="Auto-save" hint="Save the document after this long without input.">
+                <div className="flex w-[230px] items-center gap-2.5">
+                  <Slider
+                    min={500}
+                    max={5000}
+                    step={250}
+                    value={[settings.autoSaveDelayMs]}
+                    onValueChange={([v]) => onUpdateSettings({ autoSaveDelayMs: v })}
+                    data-testid="autosave-range"
+                    className="flex-1"
+                  />
+                  <span className="mono w-10 text-[11px] text-foreground/85">
+                    {(settings.autoSaveDelayMs / 1000).toFixed(2).replace(/\.?0+$/, '')}s
+                  </span>
+                </div>
+              </SettingRow>
+
+              <SettingRow label="Spell check" hint="Use the browser's native spell checker in editable blocks.">
+                <Switch
+                  checked={settings.spellCheck}
+                  onCheckedChange={(v) => onUpdateSettings({ spellCheck: v })}
+                  data-testid="toggle-spellcheck"
+                />
+              </SettingRow>
+            </SettingsSection>
+          </TabsContent>
+
+          {/* AI */}
+          <TabsContent value="ai">
+            <SettingsSection title="AI Assistant" subtitle="Pick a provider. Keys are kept in memory and never leave the browser.">
+              <SettingRow label="Provider" hint="Mock returns canned responses. OpenAI and Anthropic call their APIs from the browser.">
+                <Select value={settings.aiProvider} onValueChange={(v) => setProvider(v as AIProvider)}>
+                  <SelectTrigger className="w-full sm:w-[200px]" data-testid="provider-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mock">Mock (offline)</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="anthropic">Anthropic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+
+              {settings.aiProvider !== 'mock' && (
+                <>
+                  <SettingRow label="API URL" hint="POST endpoint. Defaults match the official provider URLs; override for proxies.">
+                    <Input
+                      type="text"
+                      className="w-full sm:w-[320px]"
+                      value={settings.aiApiUrl}
+                      onChange={(e) => onUpdateSettings({ aiApiUrl: e.target.value })}
+                      data-testid="ai-url-input"
+                    />
+                  </SettingRow>
+
+                  <SettingRow label="API key" hint="Stored in memory only — re-enter after a reload.">
+                    <Input
+                      type="password"
+                      className="w-full sm:w-[320px]"
+                      value={settings.aiApiKey}
+                      onChange={(e) => onUpdateSettings({ aiApiKey: e.target.value })}
+                      placeholder={settings.aiProvider === 'openai' ? 'sk-…' : 'sk-ant-…'}
+                      data-testid="ai-key-input"
+                    />
+                  </SettingRow>
+
+                  <SettingRow label="Model">
+                    <Input
+                      type="text"
+                      className="w-full sm:w-[320px]"
+                      value={settings.aiModel}
+                      onChange={(e) => onUpdateSettings({ aiModel: e.target.value })}
+                      data-testid="ai-model-input"
+                    />
+                  </SettingRow>
+
+                  <SettingRow label="">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (!settings.aiApiKey) push('Add an API key first', 'error')
+                        else push('AI configured. Open the AI panel to use it.', 'success')
+                      }}
+                    >
+                      Save & verify (manual)
+                    </Button>
+                  </SettingRow>
+                </>
+              )}
+            </SettingsSection>
+          </TabsContent>
+
+          {/* Shortcuts */}
+          <TabsContent value="shortcuts">
+            <SettingsSection title="Keyboard shortcuts" subtitle="A subset — full list in the command palette (⌘K).">
+              <ShortcutTable />
+            </SettingsSection>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
@@ -314,37 +263,22 @@ export function Settings({ theme, setTheme, settings, onUpdateSettings, push }: 
 function SettingsSection({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <div className="fade-up">
-      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 600, margin: '0 0 4px', letterSpacing: '-0.01em' }}>{title}</h2>
-      <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 20 }}>{subtitle}</div>
-      <div style={{ border: '1px solid var(--rule-soft)' }}>{children}</div>
+      <h2 className="m-0 mb-1 font-serif text-xl font-semibold tracking-tight">{title}</h2>
+      <div className="mb-5 text-[13px] text-muted-foreground">{subtitle}</div>
+      <div className="border border-border">{children}</div>
     </div>
   )
 }
 
-function SettingRow({ label, hint, control }: { label: string; hint?: string; control: React.ReactNode }) {
+function SettingRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, padding: '14px 18px', borderBottom: '1px solid var(--rule-softer)' }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{label}</div>
-        {hint && <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5 }}>{hint}</div>}
+    <div className="flex flex-col gap-3 border-b border-[var(--rule-softer)] px-3 py-3.5 last:border-b-0 sm:flex-row sm:items-start sm:gap-6 sm:px-4">
+      <div className="min-w-0 flex-1">
+        {label && <Label className="mb-0.5 block text-[13px] font-medium">{label}</Label>}
+        {hint && <div className="text-[12px] leading-relaxed text-muted-foreground">{hint}</div>}
       </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
+      <div className="shrink-0">{children}</div>
     </div>
-  )
-}
-
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button onClick={onToggle} data-testid="toggle" style={{
-      width: 36, height: 20, background: on ? 'var(--ink)' : 'var(--paper-2)',
-      border: '1px solid var(--rule-soft)', position: 'relative', cursor: 'pointer', padding: 0,
-    }}>
-      <div style={{
-        position: 'absolute', top: 1, left: on ? 17 : 1,
-        width: 16, height: 16, background: on ? 'var(--accent)' : 'var(--ink-3)',
-        transition: 'left 120ms',
-      }} />
-    </button>
   )
 }
 
@@ -362,10 +296,12 @@ function ShortcutTable() {
   return (
     <div>
       {rows.map((r, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 18px', borderBottom: i < rows.length - 1 ? '1px solid var(--rule-softer)' : 0 }}>
-          <div style={{ flex: 1, fontSize: 13 }}>{r.action}</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {r.combo.map((k, j) => <Kbd key={j}>{k}</Kbd>)}
+        <div key={i} className={cn('flex items-center px-4 py-2.5', i < rows.length - 1 && 'border-b border-[var(--rule-softer)]')}>
+          <div className="flex-1 text-[13px]">{r.action}</div>
+          <div className="flex gap-1">
+            {r.combo.map((k, j) => (
+              <span key={j} className="border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-foreground/85">{k}</span>
+            ))}
           </div>
         </div>
       ))}

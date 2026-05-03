@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Icon } from './Icon'
 import { Kbd } from './ui/Kbd'
-import type { Article, Route } from '../types'
+import type { Article } from '@/types'
 
 interface CommandPaletteProps {
   open: boolean
   onClose: () => void
   articles: Article[]
   onPickArticle: (id: string) => void
-  onRoute: (r: Route) => void
   onNew: () => void
   onAI: () => void
   onExport: () => void
@@ -26,9 +26,10 @@ interface Command {
   run: () => void
 }
 
-export function CommandPalette({ open, onClose, articles, onPickArticle, onRoute, onNew, onAI, onExport, onMeta, setTheme }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, articles, onPickArticle, onNew, onAI, onExport, onMeta, setTheme }: CommandPaletteProps) {
   const [q, setQ] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (open) {
@@ -40,15 +41,16 @@ export function CommandPalette({ open, onClose, articles, onPickArticle, onRoute
 
   if (!open) return null
 
+  const go = (path: string) => () => { navigate(path); onClose() }
+
   const cmds: Command[] = [
     { id: 'new', label: 'Create new article', group: 'Action', icon: 'plus', shortcut: '⌘N', run: onNew },
     { id: 'ai', label: 'Open AI assistant', group: 'Action', icon: 'ai', shortcut: '⌘/', run: onAI },
     { id: 'export', label: 'Export current article…', group: 'Action', icon: 'download', run: onExport },
     { id: 'meta', label: 'Edit metadata…', group: 'Action', icon: 'tag', run: onMeta },
-    { id: 'go-dashboard', label: 'Go to dashboard', group: 'Navigate', icon: 'doc', run: () => onRoute('dashboard') },
-    { id: 'go-editor', label: 'Go to editor', group: 'Navigate', icon: 'edit', run: () => onRoute('editor') },
-    { id: 'go-history', label: 'Go to history', group: 'Navigate', icon: 'history', run: () => onRoute('history') },
-    { id: 'go-settings', label: 'Go to settings', group: 'Navigate', icon: 'settings', run: () => onRoute('settings') },
+    { id: 'go-dashboard', label: 'Go to dashboard', group: 'Navigate', icon: 'doc', run: go('/dashboard') },
+    { id: 'go-history', label: 'Go to history', group: 'Navigate', icon: 'history', run: go('/history') },
+    { id: 'go-settings', label: 'Go to settings', group: 'Navigate', icon: 'settings', run: go('/settings') },
     { id: 'th-light', label: 'Theme: Light', group: 'Theme', icon: 'sun', run: () => setTheme('light') },
     { id: 'th-dark', label: 'Theme: Dark', group: 'Theme', icon: 'moon', run: () => setTheme('dark') },
     ...articles.map(a => ({ id: a.id, label: a.title, group: 'Articles', icon: 'doc', sublabel: a.status, run: () => onPickArticle(a.id) })),
@@ -62,17 +64,15 @@ export function CommandPalette({ open, onClose, articles, onPickArticle, onRoute
 
   return (
     <div
-      className="fade-in"
+      className="fade-in fixed inset-0 z-[95] flex items-start justify-center bg-black/40 pt-24"
       data-testid="command-palette"
-      style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(13,13,12,0.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 100 }}
       onClick={onClose}
     >
       <div
-        className="fade-up"
+        className="fade-up flex max-h-[60vh] w-[580px] max-w-[92vw] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-[var(--shadow-lg)]"
         onClick={(e) => e.stopPropagation()}
-        style={{ background: 'var(--paper)', border: '1px solid var(--ink)', width: 580, maxWidth: '92vw', maxHeight: '60vh', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--rule-soft)', gap: 10 }}>
+        <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-2.5">
           <Icon name="search" size={14} />
           <input
             ref={inputRef}
@@ -80,31 +80,25 @@ export function CommandPalette({ open, onClose, articles, onPickArticle, onRoute
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search commands, articles, settings…"
-            style={{ flex: 1, border: 0, padding: 0, fontSize: 14, fontFamily: 'var(--sans)', outline: 'none' }}
+            className="flex-1 border-0 bg-transparent p-0 font-sans text-sm outline-none placeholder:text-muted-foreground"
             data-testid="command-palette-input"
           />
           <Kbd>Esc</Kbd>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 6px' }}>
+        <div className="flex-1 overflow-y-auto px-1.5 py-2">
           {Object.entries(grouped).map(([group, items]) => (
             <div key={group}>
-              <div className="label" style={{ padding: '6px 10px' }}>{group}</div>
+              <div className="label px-2.5 py-1.5">{group}</div>
               {items.slice(0, 10).map(c => (
                 <button
                   key={c.id}
                   onClick={c.run}
                   data-testid={`palette-cmd-${c.id}`}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 10px', border: 0, background: 'transparent',
-                    cursor: 'pointer', textAlign: 'left', color: 'var(--ink-2)', fontSize: 13,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-2)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-md border-0 bg-transparent px-3 py-2.5 text-left text-[13px] text-foreground/85 transition-colors hover:bg-secondary"
                 >
                   <Icon name={c.icon} size={13} />
-                  <span style={{ flex: 1 }}>{c.label}</span>
-                  {c.sublabel && <span className="mono" style={{ fontSize: 10, color: 'var(--ink-4)' }}>{c.sublabel}</span>}
+                  <span className="flex-1">{c.label}</span>
+                  {c.sublabel && <span className="mono text-[10px] text-muted-foreground">{c.sublabel}</span>}
                   {c.shortcut && <Kbd>{c.shortcut}</Kbd>}
                 </button>
               ))}

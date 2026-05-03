@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+Codex will review your output once you are done.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands
@@ -13,16 +15,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack notes that affect how you write code
 
-- **Tailwind v4 is config-free.** There is no `tailwind.config.js`. Tailwind is wired through `@tailwindcss/vite` in `vite.config.ts`. Don't add a config file — extend via CSS in `src/index.css`.
-- **Design tokens live in `src/index.css`** as CSS custom properties on `:root` and `html.dark` (`--paper`, `--ink`, `--ink-2..4`, `--accent`, `--rule-soft`, `--mono`, `--serif`, etc.). Components reference these directly via inline `style={{ ... }}` and the `.btn`, `.label`, `.doc` utility classes defined in the same file. Most styling is inline-style + CSS-vars rather than Tailwind utility classes — match that pattern.
-- **No Shadcn CLI was used.** The Shadcn CLI couldn't scaffold into the non-empty repo, so Radix primitives (`@radix-ui/react-dialog`, `-dropdown-menu`, `-toast`, `-slot`) are installed as deps but the UI shell in `src/components/ui/` (Modal, Menu, Tag, Status, Kbd, ToastHost, CoverPh) is custom and built on the design's CSS variables. When adding new UI, follow that local pattern rather than reaching for Shadcn-style imports.
-- **TS 6 path aliases are not configured.** `baseUrl`/`paths` were removed from `tsconfig.app.json` because TS 6 deprecates `baseUrl`. Use relative imports.
+- **Tailwind v4 is config-free.** There is no `tailwind.config.js`. Tailwind is wired through `@tailwindcss/vite` in `vite.config.ts`. Theme tokens live in `@theme inline { ... }` in `src/index.css`.
+- **Two valid styling paths coexist.** New surfaces (Sidebar, Settings, modals, command palette, all of `src/components/ui/`) use Tailwind utility classes + Shadcn components. Older surfaces (Editor internals, Dashboard cards, History timeline) still use inline `style={{ … }}` reading `var(--paper)` / `var(--ink)` / `var(--accent)` etc. Both reach the same palette via the `@theme inline` mapping in `index.css`. Match the surrounding file's style when editing — don't rewrite working inline-style code into Tailwind unless asked.
+- **Shadcn UI is wired up.** `components.json` exists with `style: "new-york"` and the `@/*` alias. The CLI still can't run cleanly into this repo, so the components in `src/components/ui/` (button, input, textarea, dialog, dropdown-menu, tabs, switch, slider, select, label, card, badge, separator) were copied in by hand. Lowercase filenames (Shadcn convention). The legacy custom-styled components (`Modal.tsx`, `Menu.tsx`, `Tag.tsx`, `Status.tsx`, `Kbd.tsx`, `ToastHost.tsx`, `CoverPh.tsx`) live alongside and are still in use.
+- **`@/*` path alias** points at `src/*`. Configured in `tsconfig.app.json` (`paths`, no explicit `baseUrl` — TS 5.5+ supports implicit) and `vite.config.ts` (`resolve.alias`). Both styles work; the codebase is mid-migration to `@/`.
+- **React Router 7** — see [Routing](#routing) below.
 - **Plain `npm install` works** — no `--legacy-peer-deps` flag needed. ESLint is pinned to ^9.18 (not 10) because `eslint-plugin-react@7.x` and `eslint-plugin-react-hooks@7.x` cap their `eslint` peer at `^9.7`. If you bump ESLint, check those plugins' peer ranges first.
 - **`cypress/` is in the ESLint `globalIgnores`** list — Cypress specs don't get linted by `npm run lint`.
+- **Shadcn UI files are exempt from `react-refresh/only-export-components`.** That rule fires on the standard Shadcn pattern of re-exporting Radix primitives next to React components (e.g. `export const Dialog = DialogPrimitive.Root`). The override is scoped to `src/components/ui/**` in `eslint.config.js`.
+
+## Routing
+
+Routes are owned by `react-router-dom`'s `BrowserRouter` (set up in `src/main.tsx`) with `basename={import.meta.env.BASE_URL}` so the same code works in dev (`/`), production, and on the `/article-builder/` subpath used for GitHub Pages.
+
+| URL              | Component         |
+| ---------------- | ----------------- |
+| `/`              | redirect → `/dashboard` |
+| `/dashboard`     | `Dashboard`       |
+| `/editor/:id`    | `EditorRoute` (App.tsx) — resolves `:id` and renders `Editor` + optional `AIPanel`. Unknown id redirects to `/dashboard`. |
+| `/history`       | `History`         |
+| `/settings`      | `Settings`        |
+| `*`              | redirect → `/dashboard` |
+
+Navigation pattern:
+- Sidebar uses `<NavLink>` for nav items and article rows; `useMatch('/editor/:id')` to highlight the current article.
+- Everywhere else uses `useNavigate()` (CommandPalette, `App.newArticle`, `App.pickArticle`, `App.restoreVersion`).
+- `cypress.config.ts` `baseUrl` includes the `/article-builder` subpath so `cy.visit('/')` works.
 
 ## Architecture
 
-Single-page app, no router. `src/App.tsx` is the orchestrator: it owns all top-level state and selects which screen to render based on a `route` string (`dashboard | editor | history | settings`).
+Single-page app. `src/App.tsx` owns top-level state and renders the sidebar + a `<Routes>` block.
 
 State ownership lives in `App.tsx`:
 - `articles` — the article list (seeded from `src/data/seed.ts`); patched via `updateArticle` (current) and `updateArticleById` (any).

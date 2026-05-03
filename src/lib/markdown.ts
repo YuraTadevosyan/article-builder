@@ -34,6 +34,23 @@ export function mdToBlocks(md: string): Block[] {
       continue
     }
 
+    // horizontal rule — "---" / "***" / "___" on a line of its own
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      flushParagraph(para); para = []
+      blocks.push({ type: 'hr' })
+      i++
+      continue
+    }
+
+    // image — only when the whole line is an image markdown link
+    const img = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(trimmed)
+    if (img) {
+      flushParagraph(para); para = []
+      blocks.push({ type: 'img', src: img[2], alt: img[1] || undefined })
+      i++
+      continue
+    }
+
     // headings
     const h = /^(#{1,3})\s+(.+)$/.exec(trimmed)
     if (h) {

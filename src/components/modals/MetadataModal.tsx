@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react'
-import { Modal } from '../ui/Modal'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Tag } from '../ui/Tag'
 import { CoverPh } from '../ui/CoverPh'
-import { TAG_LIBRARY } from '../../data/seed'
-import type { Article, CoverKind } from '../../types'
+import { TAG_LIBRARY } from '@/data/seed'
+import type { Article, CoverKind } from '@/types'
+import { cn } from '@/lib/utils'
 
 interface MetadataModalProps {
   open: boolean
   article: Article | null
   onClose: () => void
-  onSave: (patch: Partial<Article>) => void
+  onSave: (id: string, patch: Partial<Article>) => void
   push: (text: string, tone?: 'success' | 'error' | 'default') => void
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span className="label">{label}</span>
-        {hint && <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>{hint}</span>}
-      </div>
-      {children}
-    </div>
-  )
 }
 
 export function MetadataModal({ open, article, onClose, onSave, push }: MetadataModalProps) {
@@ -33,7 +33,7 @@ export function MetadataModal({ open, article, onClose, onSave, push }: Metadata
     setDraft(article || {})
   }, [article])
 
-  if (!open || !article) return null
+  if (!article) return null
 
   const toggleTag = (t: string) => {
     const has = (draft.tags || []).includes(t)
@@ -41,57 +41,104 @@ export function MetadataModal({ open, article, onClose, onSave, push }: Metadata
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Article metadata" width={620}>
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <Field label="Title">
-          <input type="text" value={draft.title || ''} onChange={(e) => setDraft({ ...draft, title: e.target.value })} data-testid="meta-title-input" />
-        </Field>
-        <Field label="Description" hint="Shown on the dashboard and in social previews.">
-          <textarea rows={2} value={draft.description || ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-        </Field>
-        <Field label="Status">
-          <div style={{ display: 'flex', border: '1px solid var(--rule-soft)', width: 'fit-content' }}>
-            {['Draft', 'Published'].map((s, i) => (
-              <button key={s} onClick={() => setDraft({ ...draft, status: s as 'Draft' | 'Published' })} style={{
-                padding: '8px 18px', border: 0, borderRight: i === 0 ? '1px solid var(--rule-soft)' : 0,
-                background: draft.status === s ? 'var(--ink)' : 'transparent',
-                color: draft.status === s ? 'var(--paper)' : 'var(--ink-2)',
-                fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer',
-              }}>{s}</button>
-            ))}
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-[620px] p-0">
+        <DialogHeader>
+          <div>
+            <DialogTitle>Article metadata</DialogTitle>
+            <DialogDescription>Title, description, tags, cover and SEO preview.</DialogDescription>
           </div>
-        </Field>
-        <Field label="Tags" hint="Click to toggle.">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {TAG_LIBRARY.map(t => (
-              <Tag key={t} label={t} active={(draft.tags || []).includes(t)} onClick={() => toggleTag(t)} />
-            ))}
+        </DialogHeader>
+
+        <div className="flex flex-col gap-5 p-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="meta-title">Title</Label>
+            <Input
+              id="meta-title"
+              data-testid="meta-title-input"
+              value={draft.title || ''}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            />
           </div>
-        </Field>
-        <Field label="Cover image">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {(['ph-warm', 'ph-cool', 'ph-paper', 'ph-grid'] as CoverKind[]).map(k => (
-              <button key={k} onClick={() => setDraft({ ...draft, cover: k })} style={{
-                padding: 0, border: draft.cover === k ? '2px solid var(--ink)' : '1px solid var(--rule-soft)',
-                background: 'transparent', cursor: 'pointer',
-              }}>
-                <CoverPh kind={k} height={56} />
-              </button>
-            ))}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="meta-desc">Description</Label>
+            <Textarea
+              id="meta-desc"
+              rows={2}
+              value={draft.description || ''}
+              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            />
+            <div className="text-[11px] text-muted-foreground">Shown on the dashboard and in social previews.</div>
           </div>
-        </Field>
-        <Field label="SEO preview">
-          <div style={{ border: '1px solid var(--rule-soft)', padding: 12, background: 'var(--paper-2)' }}>
-            <div className="mono" style={{ fontSize: 10, color: 'var(--green)', marginBottom: 4 }}>field.notes › articles</div>
-            <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: '#1a4ed8', marginBottom: 4, fontWeight: 500 }}>{draft.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.4 }}>{draft.description}</div>
+
+          <div className="space-y-1.5">
+            <Label>Status</Label>
+            <div className="flex w-fit border border-border">
+              {(['Draft', 'Published'] as const).map((s, i) => (
+                <button
+                  key={s}
+                  onClick={() => setDraft({ ...draft, status: s })}
+                  className={cn(
+                    'cursor-pointer border-0 px-4 py-2 font-mono text-[11px] transition-colors',
+                    i === 0 && 'border-r border-r-border',
+                    draft.status === s ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85'
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-        </Field>
-      </div>
-      <div style={{ padding: '12px 20px', borderTop: '1px solid var(--rule-soft)', display: 'flex', justifyContent: 'flex-end', gap: 8, background: 'var(--paper-2)' }}>
-        <button className="btn" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" data-testid="meta-save-btn" onClick={() => { onSave(draft); push('Metadata saved', 'success'); onClose() }}>Save</button>
-      </div>
-    </Modal>
+
+          <div className="space-y-1.5">
+            <Label>Tags</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {TAG_LIBRARY.map(t => (
+                <Tag key={t} label={t} active={(draft.tags || []).includes(t)} onClick={() => toggleTag(t)} />
+              ))}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Click to toggle.</div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Cover image</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {(['ph-warm', 'ph-cool', 'ph-paper', 'ph-grid'] as CoverKind[]).map(k => (
+                <button
+                  key={k}
+                  onClick={() => setDraft({ ...draft, cover: k })}
+                  className={cn(
+                    'cursor-pointer bg-transparent p-0',
+                    draft.cover === k ? 'border-2 border-foreground' : 'border border-border'
+                  )}
+                >
+                  <CoverPh kind={k} height={56} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>SEO preview</Label>
+            <div className="border border-border bg-secondary p-3">
+              <div className="mono mb-1 text-[10px] text-[var(--green)]">field.notes › articles</div>
+              <div className="mb-1 font-serif text-base font-medium" style={{ color: '#1a4ed8' }}>{draft.title}</div>
+              <div className="text-xs leading-relaxed text-foreground/75">{draft.description}</div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            data-testid="meta-save-btn"
+            onClick={() => { onSave(article.id, draft); push('Metadata saved', 'success'); onClose() }}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -5,8 +5,8 @@ import { Tag } from '../ui/Tag'
 import { Status } from '../ui/Status'
 import { CoverPh } from '../ui/CoverPh'
 import { Menu } from '../ui/Menu'
-import { fmtDate } from '../../lib/utils'
-import type { Article } from '../../types'
+import { fmtDate, cn } from '@/lib/utils'
+import type { Article } from '@/types'
 
 interface DashboardProps {
   articles: Article[]
@@ -57,106 +57,142 @@ export function Dashboard({ articles, onPick, onNew, onUpdate, onDelete }: Dashb
   }
 
   return (
-    <div data-testid="dashboard" style={{ flex: 1, overflow: 'auto', height: '100%' }}>
+    <div data-testid="dashboard" className="h-full flex-1 overflow-auto">
       {/* Header */}
-      <div style={{ padding: '32px 40px 0', maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-10 md:pt-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="label" style={{ marginBottom: 6 }}>Workspace</div>
-            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 700, letterSpacing: '-0.02em', margin: 0, lineHeight: 1.1 }}>
+            <div className="label mb-1.5">Workspace</div>
+            <h1 className="m-0 font-serif text-2xl font-bold leading-tight tracking-tight md:text-4xl">
               All articles
             </h1>
           </div>
-          <button className="btn btn-primary" onClick={onNew} style={{ height: 32, padding: '0 12px' }} data-testid="new-article-btn">
-            <Icon name="plus" size={12} />
+          <button
+            onClick={onNew}
+            data-testid="new-article-btn"
+            className="inline-flex h-10 items-center gap-2 self-start border border-primary bg-primary px-3 font-mono text-xs text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:self-auto"
+          >
+            <Icon name="plus" size={14} aria-hidden="true" />
             New article
             <Kbd>⌘N</Kbd>
           </button>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', border: '1px solid var(--rule-soft)', marginBottom: 20 }}>
+        {/* Stats — 2 cols on mobile, 4 cols on md+ */}
+        <div className="mb-5 grid grid-cols-2 border border-border md:grid-cols-4">
           {[
             { label: 'Total', value: stats.total, accent: false },
             { label: 'Drafts', value: stats.drafts, accent: true },
             { label: 'Published', value: stats.published, accent: false },
             { label: 'Words written', value: stats.words.toLocaleString(), accent: false },
           ].map((s, i) => (
-            <div key={s.label} style={{ padding: '14px 16px', borderRight: i < 3 ? '1px solid var(--rule-soft)' : 0 }}>
+            <div
+              key={s.label}
+              className={cn(
+                'p-3 md:px-4 md:py-3.5',
+                // Vertical rule between cells in 2-col mobile and 4-col desktop
+                i % 2 === 0 && 'border-r border-border md:border-r',
+                i < 2 && 'border-b border-border md:border-b-0',
+                (i === 1 || i === 3) && 'md:border-r-0',
+                i === 1 && 'md:border-r md:border-r-border',
+              )}
+            >
               <div className="label">{s.label}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                <span style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em' }}>{s.value}</span>
-                {s.accent && <span style={{ width: 6, height: 6, background: 'var(--accent)' }} />}
+              <div className="mt-1.5 flex items-baseline gap-1.5">
+                <span className="font-serif text-2xl font-semibold tracking-tight md:text-[28px]">{s.value}</span>
+                {s.accent && <span className="h-1.5 w-1.5 bg-accent" />}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Filters toolbar */}
-      <div style={{ padding: '0 40px', maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderTop: '1px solid var(--rule-soft)', borderBottom: '1px solid var(--rule-soft)' }}>
-          <div style={{ position: 'relative', width: 280 }}>
+      {/* Filters toolbar — wraps to multiple rows on small screens */}
+      <div className="mx-auto max-w-[1280px] px-4 md:px-10">
+        <div className="flex flex-wrap items-center gap-2 border-y border-border py-3">
+          <div className="relative w-full sm:w-[280px]">
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search articles…"
-              style={{ paddingLeft: 28, paddingRight: 36, fontFamily: 'var(--mono)', fontSize: 11 }}
+              aria-label="Search articles"
               data-testid="search-input"
+              className="h-9 w-full border border-border bg-transparent pl-8 pr-9 font-mono text-xs text-foreground transition-colors focus-visible:border-foreground"
             />
-            <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-4)', display: 'flex' }}>
-              <Icon name="search" size={12} />
+            <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true">
+              <Icon name="search" size={13} />
             </span>
-            <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
-              <Kbd>⌘F</Kbd>
-            </span>
+            <span className="absolute right-2 top-1/2 -translate-y-1/2"><Kbd>⌘F</Kbd></span>
           </div>
 
-          <span style={{ width: 1, height: 16, background: 'var(--rule-soft)' }} />
-          <span className="label">Status</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {(['all', 'draft', 'published'] as const).map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)} className="btn" data-active={statusFilter === s} style={{ height: 24, padding: '0 8px', fontSize: 10, textTransform: 'capitalize' }} data-testid={`filter-${s}`}>
-                {s}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <span className="label">Status</span>
+            <div className="flex border border-border" role="group" aria-label="Filter by status">
+              {(['all', 'draft', 'published'] as const).map((s, i, arr) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  data-testid={`filter-${s}`}
+                  aria-pressed={statusFilter === s}
+                  className={cn(
+                    'h-8 px-2.5 font-mono text-[11px] capitalize transition-colors',
+                    i < arr.length - 1 && 'border-r border-r-border',
+                    statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85 hover:bg-secondary',
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <span style={{ flex: 1 }} />
+          <span className="hidden flex-1 sm:block" />
 
-          <span className="label">Sort</span>
-          <Menu
-            trigger={
-              <button className="btn" style={{ height: 24 }}>
-                <Icon name="sort" size={11} />{sortLabel(sort)}<Icon name="chevron-down" size={10} />
-              </button>
-            }
-            items={[
-              { label: 'Last updated', icon: 'history', onClick: () => setSort('updated') },
-              { label: 'Date created', icon: 'doc', onClick: () => setSort('created') },
-              { label: 'Title (A–Z)', icon: 'edit', onClick: () => setSort('title') },
-              { label: 'Word count', icon: 'summary', onClick: () => setSort('words') },
-            ]}
-          />
+          <div className="flex items-center gap-2">
+            <span className="label">Sort</span>
+            <Menu
+              trigger={
+                <button
+                  aria-label="Sort articles"
+                  className="inline-flex h-8 items-center gap-1.5 border border-border bg-card px-2.5 font-mono text-[11px] text-foreground/85 transition-colors hover:border-foreground hover:text-foreground"
+                >
+                  <Icon name="sort" size={12} />
+                  {sortLabel(sort)}
+                  <Icon name="chevron-down" size={11} />
+                </button>
+              }
+              items={[
+                { label: 'Last updated', icon: 'history', onClick: () => setSort('updated') },
+                { label: 'Date created', icon: 'doc', onClick: () => setSort('created') },
+                { label: 'Title (A–Z)', icon: 'edit', onClick: () => setSort('title') },
+                { label: 'Word count', icon: 'summary', onClick: () => setSort('words') },
+              ]}
+            />
 
-          <div style={{ display: 'flex', border: '1px solid var(--rule-soft)' }}>
-            {[{ id: 'grid' as const, icon: 'doc' }, { id: 'list' as const, icon: 'ul' }].map((v, i) => (
-              <button key={v.id} onClick={() => setView(v.id)} data-testid={`view-${v.id}`} style={{
-                width: 26, height: 24, border: 0,
-                borderRight: i === 0 ? '1px solid var(--rule-soft)' : 0,
-                background: view === v.id ? 'var(--ink)' : 'transparent',
-                color: view === v.id ? 'var(--paper)' : 'var(--ink-2)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Icon name={v.icon} size={11} />
-              </button>
-            ))}
+            <div className="flex border border-border" role="group" aria-label="View mode">
+              {[{ id: 'grid' as const, icon: 'doc', label: 'Grid' }, { id: 'list' as const, icon: 'ul', label: 'List' }].map((v, i) => (
+                <button
+                  key={v.id}
+                  onClick={() => setView(v.id)}
+                  data-testid={`view-${v.id}`}
+                  aria-label={v.label}
+                  aria-pressed={view === v.id}
+                  className={cn(
+                    'flex h-8 w-9 items-center justify-center transition-colors',
+                    i === 0 && 'border-r border-r-border',
+                    view === v.id ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground/85 hover:bg-secondary',
+                  )}
+                >
+                  <Icon name={v.icon} size={12} />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Tags */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0', flexWrap: 'wrap' }}>
+        <div className="flex flex-wrap items-center gap-2 py-3">
           <span className="label">Tags</span>
           <Tag label="all" active={tagFilter === null} onClick={() => setTagFilter(null)} />
           {allTags.map(t => (
@@ -166,11 +202,11 @@ export function Dashboard({ articles, onPick, onNew, onUpdate, onDelete }: Dashb
       </div>
 
       {/* Articles grid/list */}
-      <div style={{ padding: '16px 40px 60px', maxWidth: 1280, margin: '0 auto' }}>
+      <div className="mx-auto max-w-[1280px] px-4 pb-16 pt-4 md:px-10">
         {filtered.length === 0 ? (
           <EmptyState onNew={onNew} hasQuery={!!query} />
         ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+          <div className="list-stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
             {filtered.map(a => (
               <ArticleCard
                 key={a.id}
@@ -194,28 +230,25 @@ function ArticleCard({ article, onClick, onTogglePublish, onDelete }: { article:
     <div
       onClick={onClick}
       data-testid={`article-card-${article.id}`}
-      style={{
-        background: 'var(--card)',
-        border: '1px solid var(--rule-soft)',
-        cursor: 'pointer',
-        display: 'flex', flexDirection: 'column',
-        transition: 'border-color 120ms',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--ink)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--rule-soft)')}
+      className="lift-hover flex cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]"
     >
-      <CoverPh kind={article.cover} height={110} />
-      <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      <CoverPh kind={article.cover} height={120} />
+      <div className="flex flex-1 flex-col p-4">
+        <div className="mb-2 flex items-center gap-2">
           <Status value={article.status} />
-          <span style={{ flex: 1 }} />
-          <span className="mono" style={{ fontSize: 9, color: 'var(--ink-4)' }}>{article.id}</span>
+          <span className="flex-1" />
+          <span className="mono text-[10px] text-muted-foreground">{article.id}</span>
           <span onClick={(e) => e.stopPropagation()} style={{ display: 'flex' }}>
             <Menu
               align="right"
               trigger={
-                <button title="More" data-testid={`article-card-menu-${article.id}`} style={{ width: 18, height: 18, border: 0, background: 'transparent', color: 'var(--ink-4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                  <Icon name="more" size={12} />
+                <button
+                  aria-label={`More actions for ${article.title}`}
+                  title="More"
+                  data-testid={`article-card-menu-${article.id}`}
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <Icon name="more" size={14} />
                 </button>
               }
               items={[
@@ -226,16 +259,16 @@ function ArticleCard({ article, onClick, onTogglePublish, onDelete }: { article:
             />
           </span>
         </div>
-        <div style={{ fontFamily: 'var(--serif)', fontSize: 17, fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em', marginBottom: 6, color: 'var(--ink)' }}>
+        <div className="mb-1.5 font-serif text-lg font-semibold leading-tight tracking-tight text-foreground">
           {article.title}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <div className="mb-3 line-clamp-2 text-[13px] leading-relaxed text-foreground/75">
           {article.description}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 10, marginTop: 'auto', borderTop: '1px dashed var(--rule-soft)', flexWrap: 'wrap' }}>
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-dashed border-border pt-3">
           {(article.tags || []).slice(0, 2).map(t => <Tag key={t} label={t} />)}
-          <span style={{ flex: 1 }} />
-          <span className="mono" style={{ fontSize: 9, color: 'var(--ink-4)' }}>{article.words}w · {fmtDate(article.updatedAt)}</span>
+          <span className="flex-1" />
+          <span className="mono text-[10px] text-muted-foreground">{article.words}w · {fmtDate(article.updatedAt)}</span>
         </div>
       </div>
     </div>
@@ -244,22 +277,21 @@ function ArticleCard({ article, onClick, onTogglePublish, onDelete }: { article:
 
 function ArticleList({ articles, onPick, onDelete }: { articles: Article[]; onPick: (id: string) => void; onDelete: (id: string) => void }) {
   return (
-    <div style={{ border: '1px solid var(--rule-soft)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 140px 120px 100px 28px', gap: 12, padding: '8px 14px', background: 'var(--paper-2)', borderBottom: '1px solid var(--rule-soft)' }}>
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-sm)]">
+      <div className="grid grid-cols-[auto_1fr_140px_120px_100px_28px] gap-3 border-b border-border bg-secondary px-4 py-2">
         {['', 'Title', 'Tags', 'Status', 'Updated', ''].map((h, i) => (
           <div key={i} className="label">{h}</div>
         ))}
       </div>
+      <div className="list-stagger">
       {articles.map(a => (
         <div
           key={a.id}
           onClick={() => onPick(a.id)}
           data-testid={`article-list-item-${a.id}`}
-          style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 140px 120px 100px 28px', gap: 12, alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--rule-softer)', cursor: 'pointer' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-2)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          className="grid cursor-pointer grid-cols-[auto_1fr_140px_120px_100px_28px] items-center gap-3 border-b border-[var(--rule-softer)] px-4 py-2.5 transition-colors last:border-b-0 hover:bg-secondary"
         >
-          <div style={{ width: 24, height: 24, background: 'var(--paper-2)', border: '1px solid var(--rule-soft)' }}>
+          <div className="h-7 w-7 overflow-hidden rounded-md border border-border bg-secondary">
             <CoverPh kind={a.cover} height={22} />
           </div>
           <div>
@@ -275,8 +307,12 @@ function ArticleList({ articles, onPick, onDelete }: { articles: Article[]; onPi
             <Menu
               align="right"
               trigger={
-                <button title="More" style={{ width: 22, height: 22, border: 0, background: 'transparent', color: 'var(--ink-4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                  <Icon name="more" size={12} />
+                <button
+                  aria-label={`More actions for ${a.title}`}
+                  title="More"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <Icon name="more" size={14} />
                 </button>
               }
               items={[
@@ -286,23 +322,31 @@ function ArticleList({ articles, onPick, onDelete }: { articles: Article[]; onPi
           </span>
         </div>
       ))}
+      </div>
     </div>
   )
 }
 
 function EmptyState({ onNew, hasQuery }: { onNew: () => void; hasQuery: boolean }) {
   return (
-    <div style={{ padding: 60, textAlign: 'center', border: '1px dashed var(--rule-soft)' }}>
-      <div style={{ width: 36, height: 36, margin: '0 auto 14px', background: 'var(--paper-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-3)' }}>
-        <Icon name="doc" size={18} />
+    <div className="fade-up flex flex-col items-center rounded-xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-accent-ink">
+        <Icon name="doc" size={20} />
       </div>
-      <div style={{ fontFamily: 'var(--serif)', fontSize: 18, fontWeight: 600, marginBottom: 6 }}>
+      <div className="mb-1.5 font-serif text-xl font-semibold">
         {hasQuery ? 'No matches' : 'No articles yet'}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>
+      <div className="mb-5 text-sm text-foreground/70">
         {hasQuery ? 'Try a different search or clear filters.' : 'Start your first article — autosaved as you type.'}
       </div>
-      {!hasQuery && <button className="btn btn-primary" onClick={onNew}><Icon name="plus" size={12} />Create article</button>}
+      {!hasQuery && (
+        <button
+          onClick={onNew}
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-mono text-xs text-primary-foreground transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-[var(--shadow-sm)]"
+        >
+          <Icon name="plus" size={14} />Create article
+        </button>
+      )}
     </div>
   )
 }

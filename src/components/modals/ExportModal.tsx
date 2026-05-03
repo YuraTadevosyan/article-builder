@@ -1,8 +1,16 @@
 import { useState } from 'react'
-import { Modal } from '../ui/Modal'
-import { Icon } from '../Icon'
-import { stripTags } from '../../lib/utils'
-import type { Article } from '../../types'
+import { Copy, Download } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { stripTags, cn } from '@/lib/utils'
+import type { Article } from '@/types'
 
 interface ExportModalProps {
   open: boolean
@@ -21,7 +29,7 @@ const formats: { id: FormatId; label: string; ext: string; desc: string }[] = [
 
 export function ExportModal({ open, article, onClose, push }: ExportModalProps) {
   const [format, setFormat] = useState<FormatId>('md')
-  if (!open || !article) return null
+  if (!article) return null
 
   const renderPreview = () => {
     if (format === 'md') {
@@ -33,12 +41,25 @@ export function ExportModal({ open, article, onClose, push }: ExportModalProps) 
         if (b.type === 'ol') return (b.items || []).map((i, idx) => `${idx + 1}. ${i}`).join('\n')
         if (b.type === 'blockquote') return `> ${stripTags(b.text || '')}`
         if (b.type === 'code') return '```\n' + stripTags(b.text || '') + '\n```'
-        if (b.type === 'img') return '![cover](./img.png)'
+        if (b.type === 'hr') return '---'
+        if (b.type === 'img') return b.src ? `![${b.alt || ''}](${b.src})` : ''
         return stripTags(b.text || '')
-      }).join('\n\n')
+      }).filter(Boolean).join('\n\n')
     }
     if (format === 'html') {
-      return `<!doctype html>\n<html>\n<head><title>${article.title}</title></head>\n<body>\n  <article>\n    <h1>${article.title}</h1>\n    <p><em>${article.description}</em></p>\n    ${article.blocks.slice(0, 5).map(b => `<${b.type}>${stripTags(b.text || (b.items || []).join(' · '))}</${b.type}>`).join('\n    ')}\n  </article>\n</body>\n</html>`
+      const body = article.blocks.map(b => {
+        if (b.type === 'hr') return '<hr />'
+        if (b.type === 'img') {
+          if (!b.src) return ''
+          const alt = b.alt ? ` alt="${b.alt.replace(/"/g, '&quot;')}"` : ''
+          return `<img src="${b.src}"${alt} />`
+        }
+        if (b.type === 'ul') return `<ul>${(b.items || []).map(i => `<li>${i}</li>`).join('')}</ul>`
+        if (b.type === 'ol') return `<ol>${(b.items || []).map(i => `<li>${i}</li>`).join('')}</ol>`
+        if (b.type === 'code') return `<pre><code>${stripTags(b.text || '')}</code></pre>`
+        return `<${b.type}>${b.text || ''}</${b.type}>`
+      }).filter(Boolean).join('\n    ')
+      return `<!doctype html>\n<html>\n<head><title>${article.title}</title></head>\n<body>\n  <article>\n    <h1>${article.title}</h1>\n    <p><em>${article.description}</em></p>\n    ${body}\n  </article>\n</body>\n</html>`
     }
     return `[ PDF preview · ${article.title} ]\n\nPages: 4\nPaper: A4\nFont: Source Serif 4 14pt\nMargins: 22mm\n\nIncludes cover page and footer with page numbers.`
   }
@@ -47,46 +68,65 @@ export function ExportModal({ open, article, onClose, push }: ExportModalProps) 
   const currentFormat = formats.find(f => f.id === format)
 
   return (
-    <Modal open={open} onClose={onClose} title="Export article" width={680}>
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', minHeight: 400 }}>
-        <div style={{ borderRight: '1px solid var(--rule-soft)', padding: 12 }}>
-          <div className="label" style={{ marginBottom: 8 }}>Format</div>
-          {formats.map(f => (
-            <button key={f.id} onClick={() => setFormat(f.id)} data-testid={`export-format-${f.id}`} style={{
-              width: '100%', textAlign: 'left', padding: '10px 12px',
-              border: 0, borderLeft: `2px solid ${format === f.id ? 'var(--accent)' : 'transparent'}`,
-              background: format === f.id ? 'var(--paper-2)' : 'transparent',
-              cursor: 'pointer', marginBottom: 2,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{f.label}</span>
-                <span className="mono" style={{ fontSize: 10, color: 'var(--ink-4)' }}>{f.ext}</span>
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: 1.4 }}>{f.desc}</div>
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--rule-soft)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="label">Preview · {format.toUpperCase()}</span>
-            <span style={{ flex: 1 }} />
-            <span className="mono" style={{ fontSize: 10, color: 'var(--ink-4)' }}>
-              {article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}{currentFormat?.ext}
-            </span>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-[680px] p-0">
+        <DialogHeader>
+          <div>
+            <DialogTitle>Export article</DialogTitle>
+            <DialogDescription>Markdown, HTML, or print-ready PDF.</DialogDescription>
           </div>
-          <pre style={{ margin: 0, padding: 16, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6, color: 'var(--ink-2)', flex: 1, overflow: 'auto', background: 'var(--paper)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {preview}
-          </pre>
+        </DialogHeader>
+
+        <div className="grid min-h-[400px] grid-cols-[200px_1fr]">
+          <div className="border-r border-border p-3">
+            <div className="label mb-2">Format</div>
+            {formats.map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFormat(f.id)}
+                data-testid={`export-format-${f.id}`}
+                className={cn(
+                  'mb-0.5 flex w-full cursor-pointer flex-col items-start border-0 px-3 py-2.5 text-left transition-colors border-l-2',
+                  format === f.id ? 'bg-secondary border-l-accent' : 'border-l-transparent hover:bg-secondary/60'
+                )}
+              >
+                <div className="mb-0.5 flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-foreground">{f.label}</span>
+                  <span className="mono text-[10px] text-muted-foreground">{f.ext}</span>
+                </div>
+                <div className="text-[11px] leading-snug text-muted-foreground">{f.desc}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
+              <span className="label">Preview · {format.toUpperCase()}</span>
+              <span className="flex-1" />
+              <span className="mono text-[10px] text-muted-foreground">
+                {article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}{currentFormat?.ext}
+              </span>
+            </div>
+            <pre className="m-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-background p-4 font-mono text-[11px] leading-relaxed text-foreground/85">
+              {preview}
+            </pre>
+          </div>
         </div>
-      </div>
-      <div style={{ padding: '12px 20px', borderTop: '1px solid var(--rule-soft)', display: 'flex', justifyContent: 'flex-end', gap: 8, background: 'var(--paper-2)' }}>
-        <button className="btn" onClick={() => { navigator.clipboard?.writeText(preview); push('Copied to clipboard', 'success') }}>
-          <Icon name="copy" size={11} /> Copy
-        </button>
-        <button className="btn btn-primary" data-testid="export-download-btn" onClick={() => { push(`Downloaded ${article.title}${currentFormat?.ext}`, 'success'); onClose() }}>
-          <Icon name="download" size={11} /> Download
-        </button>
-      </div>
-    </Modal>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => { navigator.clipboard?.writeText(preview); push('Copied to clipboard', 'success') }}
+          >
+            <Copy size={11} /> Copy
+          </Button>
+          <Button
+            data-testid="export-download-btn"
+            onClick={() => { push(`Downloaded ${article.title}${currentFormat?.ext}`, 'success'); onClose() }}
+          >
+            <Download size={11} /> Download
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
